@@ -3,6 +3,7 @@ package system
 type Setting_t struct {
 	Name string
 	Data SettingData_t
+	Test SettingTest_t
 	Code string // 校验码
 }
 
@@ -19,8 +20,12 @@ type SettingData_t struct {
 	FileUrl      string    // 文件地址
 	BotUrl       string    // 机器人地址
 	BotUrlAlert  string    // 提示机器人地址
-	MySql        []MySql_t // 数据库
+	MySqls        []MySql_t // 数据库
 	Redis        Redis_t   // redis
+}
+
+type SettingTest_t struct {
+	Asker              string  // 请求者
 }
 
 type ModelType_t struct {
@@ -30,19 +35,13 @@ type ModelType_t struct {
 	Antenna  string
 }
 
-type Language_t struct {
-	Id string
-	Cn string
-	En string
-}
-
 type MySql_t struct {
 	Name  string // 数据库名称
 	Host  string // 地址
-	Port  int    // 端口
+	Port  int64    // 端口
 	User  string // 用户
 	Pwd   string // 密码
-	Table []Table_t
+	Tables []Table_t
 }
 
 type Table_t struct {
@@ -59,12 +58,14 @@ type Redis_t struct {
 
 var Setting = Setting_t{}
 var SettingData = SettingData_t{}
-var MySql = []MySql_t{}
+var SettingTest = SettingTest_t{}
+var MySqls = []MySql_t{}
 var Redis = Redis_t{}
 
 func RefreshSetting(set Setting_t) {
 	Setting = set
 	SettingData = set.Data
-	MySql = SettingData.MySql
+	SettingTest = set.Test
+	MySqls = SettingData.MySqls
 	Redis = SettingData.Redis
 }

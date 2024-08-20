@@ -2,6 +2,7 @@ package mysqlTool
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -11,15 +12,17 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type MySql_t struct {
-	Name string // 数据库名称
-	Host string // 地址
-	Port int64  // 端口
-	User string // 用户
-	Pwd  string // 密码
-	Table []Table_t
+	Name   string // 数据库名称
+	Host   string // 地址
+	Port   int64  // 端口
+	User   string // 用户
+	Pwd    string // 密码
+	Tables []Table_t
 }
 
 type Table_t struct {
@@ -27,6 +30,12 @@ type Table_t struct {
 	Content string // 内容
 }
 
+type ERROR_T struct {
+	Number  int64
+	Message string
+}
+
+var TestType = false
 var mysqls = []MySql_t{}
 var dbs = gin.H{}
 
@@ -34,7 +43,7 @@ func MysqlToolInit(params []MySql_t) {
 	mysqls = params
 }
 
-func dbFromName(dbName string) (*sql.DB, error) {
+func dbFromName(dbName string) (*sql.DB, int64, error) {
 	if dbs[dbName] != nil {
 		// 尝试从存储中获取已存在的数据库连接。
 		target := dbs[dbName].(*sql.DB)
@@ -43,142 +52,177 @@ func dbFromName(dbName string) (*sql.DB, error) {
 			// 检查数据库连接是否可用。
 			err = target.Ping()
 			if err != nil {
+				if TestType {
+					panic(err)
+				}
 				// 如果数据库连接不可用，打印错误信息并关闭连接。
-				fmt.Println("数据库没连接:", err)
-				fmt.Printf("\n数据库close前连接数OpenConnections：%v\nInUse:%v\n", target.Stats().OpenConnections, target.Stats().InUse)
+				// fmt.Println("数据库没连接:", err)
+				// fmt.Printf("\n数据库close前连接数OpenConnections：%v\nInUse:%v\n", target.Stats().OpenConnections, target.Stats().InUse)
 				target.Close()
 			} else {
 				// 如果数据库连接可用，直接返回连接对象。
-				return target, nil
+				return target, 0, nil
 			}
 		}
 
 	}
-	sqlString, err := targetSqlString(dbName)
+	sqlString, tcode, err := targetSqlString(dbName)
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return nil, tcode, err
 	}
 	// 如果不存在可用的数据库连接，尝试创建新的数据库连接。
 	target, err := sql.Open("mysql", sqlString)
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return nil, errorCode(err), err
 	} else {
 		// 将新创建的数据库连接存储，并返回连接对象。
 		dbs[dbName] = target
-		return target, nil
+		return target, 0, nil
 	}
 }
 
-func targetSqlString(name string) (string, error) {
+func targetSqlString(name string) (string, int64, error) {
 	for i := 0; i < len(mysqls); i++ {
 		item := mysqls[i]
 		if strings.Compare(item.Name, name) == 0 {
-			return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", item.User, item.Pwd, item.Host, item.Port, name), nil
+			return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", item.User, item.Pwd, item.Host, item.Port, name), 0, nil
 		}
 	}
-	return "", errors.New("数据库没配置")
+	return "", 10010, errors.New("没配置数据库")
 }
 
 // 增
-func AddMysql(dbName string, tableName string, keys string, values string) (int64, error) {
-	db, err := dbFromName(dbName)
+func AddMysql(dbName string, tableName string, keys string, values string) (int64, int64, error) {
+	db, tcode, err := dbFromName(dbName)
 	if err != nil {
-		return -1, err
+		if TestType {
+			panic(err)
+		}
+		return -1, tcode, err
 	}
 	defer db.Close()
 	dbString := fmt.Sprintf("insert into %s(%s) values(%s)", tableName, keys, values)
-	fmt.Printf("数据库新增：%s", dbString)
+	// fmt.Printf("数据库新增：%s", dbString)
 	//	// 2. exec
 	ret, err := db.Exec(dbString) //exec执行（Python中的exec就是执行字符串代码的，返回值是None，eval有返回值）
 	if err != nil {
-		log.Println("err:", err)
-		log.Println("error:", err.Error())
-		if strings.Contains(err.Error(), "Error 1146") {
+		errcode := errorCode(err)
+		if errcode != -1 && errcode == 1146 {
 			log.Printf("数据表%s不存在，尝试创建数据表", tableName)
-			_, err = db.Query(sqlCeateFromName(dbName, tableName))
+			sqlStr, err := sqlCeateFromName(dbName, tableName)
 			if err != nil {
-				return -1, err
+				if TestType {
+					panic(err)
+				}
+				return -1, 10020, err
+			}
+			_, err = db.Query(sqlStr)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				return -1, errorCode(err), err
 			} else {
 				log.Printf("数据表%s创建成功", tableName)
 				log.Printf("\n==Insert-dbString:%s\n", dbString)
 				ret, err = db.Exec(dbString)
 				if err != nil {
-					return -1, err
+					if TestType {
+						panic(err)
+					}
+					return -1, errorCode(err), err
 				}
 			}
 		} else {
-			return -1, err
+			return -1, errorCode(err), err
 		}
 	}
 	// 增
 	// 如果是插入数据的操作，能够拿到插入数据的id
 	id, err := ret.LastInsertId()
 	if err != nil {
-		fmt.Printf("get insert id fail,err:%v\n", err)
-		return -1, err
+		if TestType {
+			panic(err)
+		}
+		// fmt.Printf("get insert id fail,err:%v\n", err)
+		return -1, errorCode(err), err
 	}
-	fmt.Println("insert id:", id)
-	return id, nil
+	// fmt.Println("insert id:", id)
+	return id, 0, nil
 }
 
 // 删
-func DelectMysql(dbName string, table string, where string) (gin.H, error) {
-	db, err := dbFromName(dbName)
+func DelectMysql(dbName string, table string, where string) (int64, int64, error) {
+	db, tcode, err := dbFromName(dbName)
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return 0, tcode, err
 	}
 	if len(where) == 0 {
-		return ReturnFaile(1149, "where 不能为空"), errors.New("where 不能为空")
+		return 0, 10003, errors.New("where 不能为空")
 	}
 	dbString := "DELETE FROM " + table + " WHERE " + where
 	result, err := db.Exec(dbString)
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return 0, errorCode(err), err
 	}
 	rowNum, err := result.RowsAffected()
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return 0, errorCode(err), err
 	} else if rowNum == 0 {
-		return nil, errors.New("没有找到需修改的数据")
+		return 0, 10011, errors.New("数据不存在，不能删除")
 	}
-	return gin.H{
-		"code": 0,
-		"msg":  "OK",
-		"data": gin.H{
-			"count": rowNum,
-		},
-	}, nil
+	return rowNum, 0, nil
 }
 
 // 改
-func UpdateMysql(dbName string, table string, content string, where string) (gin.H, error) {
-	db, err := dbFromName(dbName)
+func UpdateMysql(dbName string, table string, content string, where string) (int64, int64, error) {
+	db, tcode, err := dbFromName(dbName)
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return 0, tcode, err
 	}
 	if len(where) == 0 {
-		return ReturnFaile(1149, "where 不能为空"), errors.New("where 不能为空")
+		return 0, 10003, errors.New("缺少where条件")
 	}
 	dbString := "UPDATE " + table + " SET " + content + " WHERE " + where
 	result, err := db.Exec(dbString)
 	if err != nil {
-		return ReturnFaile(1149, err), err
+		if TestType {
+			panic(err)
+		}
+		return 0, errorCode(err), err
 	}
 	rowsCount, _ := result.RowsAffected()
-	fmt.Printf("update success, affected rows:[%d]\n", rowsCount)
+	// fmt.Printf("update success, affected rows:[%d]\n", rowsCount)
 
-	return gin.H{
-		"code": 0,
-		"data": nil,
-		"msg":  "Success",
-	}, nil
+	return rowsCount, 0, nil
 }
 
 // 查
-func ListMysql(dbName string, table string, where string, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, error) {
-	db, err := dbFromName(dbName)
+func ListMysql(dbName string, table string, where string, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int64, error) {
+	db, tcode, err := dbFromName(dbName)
 	if err != nil {
-		return nil, 0, err
+		if TestType {
+			panic(err)
+		}
+		return nil, 0, tcode, err
 	}
 	// 处理参数
 	whereString := ""
@@ -196,10 +240,13 @@ func ListMysql(dbName string, table string, where string, sort string, pageNumbe
 		pageSize = 20
 	}
 	dbString := fmt.Sprintf("SELECT * FROM %s %s %s LIMIT %d,%d;", table, whereString, orderByString, pageNumber*pageSize, pageSize)
-	fmt.Println("List-dbString", dbString)
+	// fmt.Println("List-dbString", dbString)
 	rows, err := db.Query(dbString)
 	if err != nil {
-		return nil, 0, err
+		if TestType {
+			panic(err)
+		}
+		return nil, 0, errorCode(err), err
 	}
 	defer rows.Close()
 	columns, _ := rows.Columns()
@@ -215,7 +262,10 @@ func ListMysql(dbName string, table string, where string, sort string, pageNumbe
 		//将行数据保存到record字典
 		err = rows.Scan(scanArgs...)
 		if err != nil {
-			return nil, 0, err
+			if TestType {
+				panic(err)
+			}
+			return nil, 0, errorCode(err), err
 		}
 		record := make(map[string]interface{})
 		for i, col := range values {
@@ -236,33 +286,38 @@ func ListMysql(dbName string, table string, where string, sort string, pageNumbe
 		result = append(result, record)
 		//isContentTargetOrderId = true
 	}
-	count, err := CheckCount(dbName, table, where)
+	count, tcode, err := CheckCount(dbName, table, where)
 	if err != nil {
-		return nil, 0, err
+		if TestType {
+			panic(err)
+		}
+		return nil, 0, tcode, err
 	}
-	return result, count, nil
+	return result, count, 0, nil
 }
 
-func DetailMysql(dbName string, table string, where string) (gin.H, error) {
-	res, count, err := ListMysql(dbName, table, where, "", 0, 1)
+func DetailMysql(dbName string, table string, where string) (gin.H, int64, error) {
+	res, count, tcode, err := ListMysql(dbName, table, where, "", 0, 1)
 	if err != nil {
-		return ReturnFaile(1149, err), err
+		if TestType {
+			panic(err)
+		}
+		return nil, tcode, err
 	} else if count == 1 && len(res) == 1 {
 		// 成功
-		return gin.H{
-			"code": 0,
-			"data": res[0],
-			"msg":  "Success",
-		}, nil
+		return res[0], 0, nil
 	} else {
-		return ReturnFaile(1149, "not found"), errors.New("not found")
+		return nil, 10020, errors.New("not found")
 	}
 }
 
-func DifMysql(dbName string, table string, field string, where string) (gin.H, error) {
-	db, err := dbFromName(dbName)
+func DifMysql(dbName string, table string, field string, where string) ([]gin.H, int64, error) {
+	db, tcode, err := dbFromName(dbName)
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return nil, tcode, err
 	}
 	orderByString := fmt.Sprintf("ORDER BY %s DESC", field)
 	// 处理参数
@@ -271,10 +326,12 @@ func DifMysql(dbName string, table string, field string, where string) (gin.H, e
 		whereString = fmt.Sprintf("WHERE %s", where)
 	}
 	dbString := fmt.Sprintf("SELECT DISTINCT %s, COUNT(*) FROM %s %s GROUP BY %s %s;", field, table, whereString, field, orderByString)
-	log.Println("dbString:", dbString)
 	rows, err := db.Query(dbString)
 	if err != nil {
-		return nil, err
+		if TestType {
+			panic(err)
+		}
+		return nil, errorCode(err), err
 	}
 	defer rows.Close()
 	//字典类型
@@ -307,7 +364,10 @@ func DifMysql(dbName string, table string, field string, where string) (gin.H, e
 		}
 		count, err := strconv.Atoi(record["COUNT(*)"].(string))
 		if err != nil {
-			return nil, err
+			if TestType {
+				panic(err)
+			}
+			return nil, errorCode(err), err
 		}
 		resultMac := gin.H{
 			"count": count,
@@ -315,40 +375,74 @@ func DifMysql(dbName string, table string, field string, where string) (gin.H, e
 		}
 		result = append(result, resultMac)
 	}
-	return gin.H{
-		"code":  0,
-		"data":  result,
-		"count": len(result),
-		"msg":   "Success",
-	}, nil
+	return result, 0, nil
 }
 
 // 检查数量
-func CheckCount(dbName string, table string, where string) (int64, error) {
-	db, err := dbFromName(dbName)
+func CheckCount(dbName string, table string, where string) (int64, int64, error) {
+	db, tcode, err := dbFromName(dbName)
 	if err != nil {
-		return 0, err
+		if TestType {
+			panic(err)
+		}
+		return 0, tcode, err
 	}
 	whereString := ""
 	if len(where) > 0 {
 		whereString = fmt.Sprintf("WHERE %s", where)
 	}
 	dbString := fmt.Sprintf("SELECT COUNT(*) FROM %s %s", table, whereString)
-	fmt.Printf("CheckCount-dbString:%s", dbString)
+	// fmt.Printf("CheckCount-dbString:%s", dbString)
 	rows, err := db.Query(dbString)
 	if err != nil {
-		return 0, err
+		if TestType {
+			panic(err)
+		}
+		return 0, errorCode(err), err
 	}
 	defer rows.Close()
-	total := 0
+	total := int64(0)
 	for rows.Next() {
 		err := rows.Scan(
 			&total,
 		)
 		if err != nil {
-			fmt.Println("GetKnowledgePointListTotal error", err)
+			if TestType {
+				panic(err)
+			}
+			// fmt.Println("GetKnowledgePointListTotal error", err)
 			continue
 		}
 	}
-	return int64(total), nil
+	return total, 0, nil
+}
+
+func jsonString(mapData interface{}) string {
+	j, err := json.MarshalIndent(mapData, "", " ")
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("json格式化失败：", err)
+		return ""
+	}
+	return string(j)
+}
+
+func errorCodeMsg(e error) (int64, string) {
+	target := ERROR_T{}
+	j, err := json.MarshalIndent(e, "", " ")
+	if err != nil {
+		return -1, "error转json格式化失败"
+	}
+	err = json.Unmarshal([]byte(j), &target)
+	if err != nil || target.Number == 0 {
+		return -1, "error绑定失败"
+	}
+	return target.Number, target.Message
+}
+
+func errorCode(e error) int64 {
+	code, _ := errorCodeMsg(e)
+	return code
 }

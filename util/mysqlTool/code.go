@@ -1,13 +1,14 @@
 package mysqlTool
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
-func stringFromCode(code int) string{
+func stringFromCode(code int64) string{
     switch code {
+    case 0: return "成功"
     case 1005: return "创建表失败"
     case 1006: return "创建数据库失败"
     case 1007: return "数据库已存在，创建数据库失败"
@@ -45,7 +46,7 @@ func stringFromCode(code int) string{
     case 1050: return "数据表已存在"
     case 1051: return "数据表不存在"
 
-    case 1054: return "字段不存在"
+    case 1054: return "数据库缺少字段"
 
     case 1062: return "字段值重复，入库失败"
 
@@ -96,13 +97,35 @@ func stringFromCode(code int) string{
     case 2002: return "服务器端口不对，请咨询空间商正确的端口。"
     case 2003: return "mysql服务没有启动，请启动该服务"
 
-    // 自定义code
+    // 自定义code，参数相关
     case 10000: return "参数错误"
+    case 10001: return "参数格式错误"
+    case 10002: return "参数不能为空"
+    case 10003: return "缺少where条件"
+    case 10004: return "缺少参数"
+    // 数据库相关
+    case 10010: return "没配置数据库"
+    case 10011: return "数据不存在，不能删除"
+    case 10012: return "数据不存在，不能更新"
+    // 数据相关
+    case 10020: return "数据不存在"
+    case 10021: return "数据已存在"
+
+
     default: return fmt.Sprintf("未知错误（%d）", code)
     }
 }
 
-func ReturnFaile(code int, data interface{}) gin.H {
+func ReturnFail(code int64, data interface{}) gin.H {
+    return gin.H{
+        "code": code,
+        "data": data,
+        "msg":  stringFromCode(code),
+    }
+}
+
+func ReturnSuccess(data interface{}) gin.H {
+    code := int64(0)
     return gin.H{
         "code": code,
         "data": data,

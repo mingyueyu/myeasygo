@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 func Bot(content string) {
 	botFromUrl(content, SettingData.BotUrl)
 }
@@ -23,9 +22,8 @@ func BotAlert(content string) {
 	botFromUrl(content, SettingData.BotUrlAlert)
 }
 
-
 func botFromUrl(content string, urlString string) {
-	fmt.Println(content)
+	// fmt.Println(content)
 	//newdata为xml的字符串数据
 	client := &http.Client{}
 	senddata := gin.H{
@@ -41,16 +39,15 @@ func botFromUrl(content string, urlString string) {
 
 	req, err := http.NewRequest("POST", urlString, strings.NewReader(out.String()))
 	if nil != err {
-		fmt.Println("botFromUrlErr:", err)
+		// fmt.Println("botFromUrlErr:", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/xml")
 
 	resp, err := client.Do(req)
 	if nil != err {
-		fmt.Println("botFromUrlErr:", err)
+		// fmt.Println("botFromUrlErr:", err)
 		return
 	}
 	defer resp.Body.Close()
 }
-

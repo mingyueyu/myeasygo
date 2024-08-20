@@ -12,14 +12,14 @@ func sqlCeateFromName(dbName string, tableName string) (string, error) {
 	for i := 0; i < len(mysqls); i++ {
 		item := mysqls[i]
 		if strings.Compare(item.Name, dbName) == 0 {
-			for j := 0; j < len(item.Table); j++ {
-				if strings.Compare(item.Table[j].Name, defaultTableName) == 0 {
-					return item.Table[j].Content, nil
+			for j := 0; j < len(item.Tables); j++ {
+				if strings.Compare(item.Tables[j].Name, defaultTableName) == 0 {
+					return sqlDefaultContent(tableName, item.Tables[j].Content), nil
 				}
 			}
 		}
 	}
-	return "", errors.New("未找到数据库"+dbName+"表"+tableName+"内容")
+	return "", errors.New("未找到数据库" + dbName + "表" + tableName + "内容")
 }
 
 // 截取表名前缀
@@ -75,10 +75,16 @@ func sqlDefaultContent(name string, field string) string {
 	// 先对model进行清洗和验证
 	_, err := sanitizeModel(name)
 	if err != nil {
+		if TestType {
+			panic(err)
+		}
 		return "" // 返回错误空值，让调用方处理
 	}
 	_, err = sanitizeModel(field)
 	if err != nil {
+		if TestType {
+			panic(err)
+		}
 		return "" // 返回错误空值，让调用方处理
 	}
 	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` ("+

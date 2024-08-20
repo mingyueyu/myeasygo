@@ -3,233 +3,22 @@ package mmysql
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/mmysql"
 )
 
-func Add(r *gin.Engine, relativePath string, dbName string, tableName string, withYear bool, withMouth bool, wihtIp bool) {
-	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
-		if err != nil {
-			c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-			return
-		}else{
-			add(c, param, dbName, tableName, withYear, withMouth, wihtIp)
-		}
-	})
-}
+var TestType = false
 
-func Delete(r *gin.Engine, relativePath string, dbName string, tableName string) {
-	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
-		if err != nil {
-			c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		} else {
-			del(c, param, dbName, tableName)
-		}
-	})
-}
-
-func Update(r *gin.Engine, relativePath string, dbName string, tableName string) {
-	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
-		if err != nil {
-			c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		} else {
-			update(c, param, dbName, tableName)
-		}
-	})
-}
-
-func List(r *gin.Engine, relativePath string, dbName string, tableName string, searchTargets []string) {
-	r.GET(relativePath, func(c *gin.Context) {
-		list(c, paramFromGet(c), dbName, tableName, searchTargets)
-	})
-	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
-		if err != nil {
-			c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		} else {
-			list(c, param, dbName, tableName, searchTargets)
-		}
-	})
-}
-
-func Detail(r *gin.Engine, relativePath string, dbName string, tableName string) {
-	r.GET(relativePath, func(c *gin.Context) {
-		detail(c, paramFromGet(c), dbName, tableName)
-	})
-	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
-		if err != nil {
-			c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		} else {
-			detail(c, param, dbName, tableName)
-		}
-	})
-}
-
-func Dif(r *gin.Engine, relativePath string, dbName string, tableName string) {
-	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
-		if err != nil {
-			c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		} else {
-			dif(c, param, dbName, tableName)
-		}
-	})
-}
-
-func add(c *gin.Context, param gin.H, dbName string, tableName string, withYear bool, withMouth bool, wihtIp bool) {
-	if param["content"] == nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(1002, errors.New("content is nil")))
-		return
-	}
-	content := param["content"].(gin.H)
-	if content["infoId"] == nil {
-		content["infoId"] = mmysql.GetTimeLongName()
-	}
-	if wihtIp {
-		content["IP"] = c.ClientIP()
-	}
-	content["IP"] = nil
-	keyStr, valueStr := sqlKeyValuesFromMap(content)
-	db, err := mmysql.DbFromName(dbName)
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		return
-	}
-	table := tableName
-	if param["table"] != nil {
-		table = fmt.Sprintf("%s%v", table, param["table"])
-	}
-	if withYear {
-		t := time.Now()
-		year := fmt.Sprintf("%d", t.Year())
-		month := fmt.Sprintf("%02d", t.Month())
-		if param["year"] != nil {
-			year = fmt.Sprintf("%v", param["year"])
-		}
-		if param["month"] != nil {
-			year = fmt.Sprintf("%02v", param["month"])
-		}
-		table = fmt.Sprintf("%s_%v", table, year)
-		if withMouth {
-			table = fmt.Sprintf("%s%02v", table, month)
-		}
-	}
-	num, err := mmysql.AddMysql(db, table, keyStr, valueStr)
-	if err != nil || num < 0 {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10002, err.Error()))
-	} else {
-		// IP 不返回
-		delete(content, "IP")
-		c.JSON(http.StatusOK, mmysql.RequestResult(content, nil))
-	}
-
-}
-
-func list(c *gin.Context, param gin.H, dbName string, tableName string, searchTargets []string) {
-	table := tableNameFromeParam(param, tableName)
-	sortString := fmt.Sprintf("%s %s", "createTime", "DESC")
-	sort := paramGinH(param["sort"])
-	if sort != nil {
-		if sort["key"] != nil && len(sort["key"].(string)) > 0 && sort["value"] != nil && len(sort["value"].(string)) > 0 {
-			sortString = fmt.Sprintf("%s %s", sort["key"], sort["value"])
-		}
-	}
-	page := paramInt(param["page"], 1) - 1
-	limit := paramInt(param["limit"], 20)
-	db, err := mmysql.DbFromName(dbName)
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		return
-	}
-	list, count, err := mmysql.ListMysql(db, table, whereString(param, searchTargets), sortString, page, limit)
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10003, err.Error()))
-		return
-	} else {
-		result := mmysql.RequestResult(list, nil)
-		result["count"] = count
-		c.JSON(http.StatusOK, result)
-	}
-}
-
-func del(c *gin.Context, param gin.H, dbName string, tableName string) {
-	table := tableNameFromeParam(param, tableName)
-	db, err := mmysql.DbFromName(dbName)
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		return
-	}
-	re, err := mmysql.DelectMysql(db, table, whereString(param, nil))
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10003, err.Error()))
-		return
-	} else {
-		c.JSON(http.StatusOK, re)
-	}
-}
-
-func update(c *gin.Context, param gin.H, dbName string, tableName string) {
-	table := tableNameFromeParam(param, tableName)
-	db, err := mmysql.DbFromName(dbName)
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		return
-	}
-	mmysql.UpdateMysql(db, table, sqlContentValue(param["content"].(gin.H)), whereString(param, nil))
-}
-
-func detail(c *gin.Context, param gin.H, dbName string, tableName string) {
-	table := tableNameFromeParam(param, tableName)
-	db, err := mmysql.DbFromName(dbName)
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		return
-	}
-	res, err := mmysql.DetailMysql(db, table, whereString(param, nil))
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10003, err.Error()))
-		return
-	} else {
-		c.JSON(http.StatusOK, res)
-	}
-}
-
-func dif(c *gin.Context, param gin.H, dbName string, tableName string) {
-	table := tableNameFromeParam(param, tableName)
-	db, err := mmysql.DbFromName(dbName)
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10000, err.Error()))
-		return
-	}
-	if param["field"] == nil || len(param["field"].(string)) == 0 {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(1002, errors.New("field参数不能为空")))
-		return
-	}
-	result, err := mmysql.DifMysql(db, table, param["field"].(string), whereString(param, nil))
-	if err != nil {
-		c.JSON(http.StatusOK, mmysql.ReturnFaile(10003, err.Error()))
-		return
-	}
-	c.JSON(http.StatusOK, result)
-}
-
+// type HandlerFunc func(c *gin.Context) (code int64, data interface{}, err error)
 func tableNameFromeParam(param gin.H, tableName string) string {
 	table := tableName
 	if param["table"] != nil {
-		table = fmt.Sprintf("%s%v", table, param["table"])
+		table = fmt.Sprintf("%s_%v", table, param["table"])
 	}
 	if paramInt(param["year"], -1) > -1 {
 		table = fmt.Sprintf("%s_%v", table, param["year"])
@@ -261,7 +50,6 @@ func whereString(param gin.H, searchTargets []string) string {
 	whereStrings := []string{}
 	and := paramGinH(param["and"])
 	if and != nil {
-
 		if whereString := sqlContentKeyValues(and, false); len(whereString) > 0 {
 			whereStrings = append(whereStrings, whereString)
 		}
@@ -402,12 +190,14 @@ func paramToGinH(c *gin.Context) (gin.H, error) {
 	// 这样读取字节流之后，整个c.request.body就已经读空啦。再次无法读到数据。
 	data, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		if TestType { panic(err)}
 		return nil, err
 	}
 
 	m := make(map[string]interface{})
 	err = json.Unmarshal(data, &m)
 	if err != nil {
+		if TestType { panic(err)}
 		return nil, err
 	}
 
@@ -442,6 +232,7 @@ func paramInt(value interface{}, defaultValue int64) int64 {
 	case "string":
 		i, err := strconv.ParseInt(value.(string), 10, 64)
 		if err != nil {
+		if TestType { panic(err)}
 			return defaultValue
 		} else {
 			return i
@@ -470,6 +261,7 @@ func paramGinH(value interface{}) gin.H {
 		m := make(map[string]interface{})
 		err := json.Unmarshal([]byte(value.(string)), &m)
 		if err != nil {
+		if TestType { panic(err)}
 			return nil
 		} else {
 			return gin.H(m)
@@ -478,3 +270,22 @@ func paramGinH(value interface{}) gin.H {
 		return nil
 	}
 }
+
+// func wrap(handler HandlerFunc) func(c *gin.Context) {
+// 	return func(c *gin.Context) {
+// 		code, data, err := handler(c)
+// 		if err != nil {
+// 			c.JSON(http.StatusOK, gin.H{
+// 				"code": code,         //状态
+// 				"msg":  mysqlTool.StringFromCode(code), //描述信息
+// 				"data": err.Error(), // 错误信息
+// 			})
+// 			return
+// 		}
+// 		c.JSON(http.StatusOK, gin.H{
+// 			"code": 0, //状态
+// 			"msg":  "Success",     //描述信息
+// 			"data": data,           //数据
+// 		})
+// 	}
+// }

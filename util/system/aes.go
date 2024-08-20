@@ -8,49 +8,62 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
+	// "time"
 
 	"github.com/wumansgy/goEncrypt/aes"
 )
 
-var aesSecretKey = "quxingdong202408"
+var TestType = false
 
+var aesSecretKey = "quxingdong202408"
 
 func ReadSetting() bool {
 	path := fmt.Sprintf("%s/setting.ini", myPath())
 	f, err := os.Open(path)
 	if err != nil {
+		if TestType {
+			panic(err)
+		}
 		// 打开文件失败
-		fmt.Println(err)
+		// fmt.Println(err)
 		return false
 	}
 	defer f.Close() // 确保文件会被关闭
-	t1 := time.Now()
+	// t1 := time.Now()
 	// 读取文件内容
 	data, err := io.ReadAll(f)
 	if err != nil {
-		fmt.Println("读取文件时出错:", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("读取文件时出错:", err)
 		return false
 	}
-	fmt.Printf("读取文件：%s", string(data))
+	// fmt.Printf("读取文件：%s", string(data))
 	unEncData, err := aes.AesCtrDecryptByBase64(string(data), []byte(aesSecretKey), nil)
 	if err != nil {
-		fmt.Println("解密失败：", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("解密失败：", err)
 		return false
 	}
 	err = json.Unmarshal([]byte(unEncData), &Setting)
 	if err != nil {
-		fmt.Println("error:", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("error:", err)
 		return false
 	}
 	if unConvert(Setting.Code, Setting.Name, jsonString(Setting.Data)) {
 		RefreshSetting(Setting)
 	} else {
-		fmt.Println("校验失败")
+		// fmt.Println("校验失败")
 	}
-	t2 := time.Now()
+	// t2 := time.Now()
 	// 计算读取文件的耗时
-	fmt.Printf("读取文件耗时：%s\n", t2.Sub(t1))
+	// fmt.Printf("读取文件耗时：%s\n", t2.Sub(t1))
 	return true
 }
 
@@ -58,42 +71,60 @@ func SetSetting(codePath string, inPath string) bool {
 	path := fmt.Sprintf("%s/setting%s.json", codePath, inPath)
 	f, err := os.Open(path)
 	if err != nil {
+		if TestType {
+			panic(err)
+		}
 		// 打开文件失败
-		fmt.Println(err)
+		// fmt.Println(err)
 		return false
 	}
 	defer f.Close() // 确保文件会被关闭
 	// 读取文件内容
 	data, err := io.ReadAll(f)
 	if err != nil {
-		fmt.Println("读取文件时出错:", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("读取文件时出错:", err)
 		return false
 	}
 	set := Setting_t{}
 	err = json.Unmarshal([]byte(data), &set)
 	if err != nil {
-		fmt.Println("error:", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("error:", err)
 		return false
 	}
-	fmt.Printf("读取源文件：%s", string(data))
+	// fmt.Printf("读取源文件：%s", string(data))
 	jsonData, err := json.MarshalIndent(set.Data, "", " ")
 	if err != nil {
-		fmt.Println("set.Data json格式化失败：", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("set.Data json格式化失败：", err)
 		return false
 	}
 	set.Code = convert(set.Name, string(jsonData))
 	jsonData, err = json.MarshalIndent(set, "", " ")
 	if err != nil {
-		fmt.Println("set json格式化失败：", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("set json格式化失败：", err)
 		return false
 	}
 	// 加密结果
 	value, err := aes.AesCtrEncryptBase64(jsonData, []byte(aesSecretKey), nil)
 	if err != nil {
-		fmt.Println("加密失败：", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("加密失败：", err)
 		return false
 	}
-	fmt.Printf("设置：%s\n加密结果:%s", jsonString(set), value)
+	// fmt.Printf("设置：%s\n加密结果:%s", jsonString(set), value)
 	// 保存到指定路径
 	saveToExePath(value)
 	return true
@@ -104,16 +135,22 @@ func saveToExePath(value string) {
 
 	err := os.WriteFile(path, []byte(value), 0644) // 指定文件路径、数据和权限（这里为0644）
 	if err != nil {
-		fmt.Println(err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println(err)
 	} else {
-		fmt.Println("数据已成功保存到文件！")
+		// fmt.Println("数据已成功保存到文件！")
 	}
 }
 
 func myPath() string {
 	ex, err := os.Executable()
 	if err != nil {
-		fmt.Println("获取程序路径失败：",err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("获取程序路径失败：", err)
 		return ""
 	}
 	exPath := filepath.Dir(ex)
@@ -123,7 +160,10 @@ func myPath() string {
 func jsonString(mapData interface{}) string {
 	j, err := json.MarshalIndent(mapData, "", " ")
 	if err != nil {
-		fmt.Println("json格式化失败：", err)
+		if TestType {
+			panic(err)
+		}
+		// fmt.Println("json格式化失败：", err)
 		return ""
 	}
 	return string(j)
