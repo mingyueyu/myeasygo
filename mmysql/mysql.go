@@ -31,7 +31,7 @@ func tableNameFromeParam(param gin.H, tableName string) string {
 }
 
 func paramFromGet(c *gin.Context) gin.H {
-	return gin.H{
+	re := gin.H{
 		"search": c.Query("search"),
 		"page":   c.Query("page"),
 		"limit":  c.Query("limit"),
@@ -42,46 +42,73 @@ func paramFromGet(c *gin.Context) gin.H {
 		"before": c.QueryMap("before"),
 		"mid":    c.QueryMap("mid"),
 		"after":  c.QueryMap("after"),
-		"sort":   c.QueryMap("sort"),
+		"sort":   c.QueryArray("sort"),
 	}
+	if re["sort"] != nil {
+		sorts := re["sort"].([]string)
+		target := []gin.H{}
+		for i := 0; i < len(sorts); i++ {
+			item := sorts[i]
+			list := strings.Split(item, ":")
+			target = append(target, gin.H{"field": list[0], "type": list[1]})
+		}
+		re["sort"] = target
+	}
+	return re
 }
 
 func whereString(param gin.H, searchTargets []string) string {
 	whereStrings := []string{}
 	and := paramGinH(param["and"])
 	if and != nil {
-		if whereString := sqlContentKeyValues(and, false); len(whereString) > 0 {
-			whereStrings = append(whereStrings, whereString)
+		if whereString := sqlAndKeyValues(and); len(whereString) > 0 {
+			whereStrings = append(whereStrings, fmt.Sprintf("(%s)",whereString))
 		}
 	}
-	or := paramGinH(param["or"])
-	if or != nil {
+	if param["or"] != nil {
+		orType := reflect.TypeOf(param["or"]).String()
 
-		if whereString := sqlContentKeyValues(or, true); len(whereString) > 0 {
-			whereStrings = append(whereStrings, whereString)
+		if strings.Compare(orType, "gin.H") == 0 {
+			or := paramGinH(param["or"])
+			if or != nil {
+				if whereString := sqlOrKeyValues(or); len(whereString) > 0 {
+					whereStrings = append(whereStrings, fmt.Sprintf("(%s)",whereString))
+				}
+			}
+		} else if strings.Compare(orType, "[]gin.H") == 0 {
+			list := param["or"].([]gin.H)
+			targetList := []string{}
+			for i := 0; i < len(list); i++ {
+				or := list[i]
+				if whereString := sqlOrKeyValues(or); len(whereString) > 0 {
+					targetList = append(targetList, whereString)
+				}
+			}
+			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", strings.Join(targetList, " OR ")))
 		}
 	}
+
 	before := paramGinH(param["before"])
 	if before != nil {
 		if whereString := sqlLikeKeyValues(before, true, false); len(whereString) > 0 {
-			whereStrings = append(whereStrings, whereString)
+			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 		}
 	}
 	mid := paramGinH(param["mid"])
 	if mid != nil {
 		if whereString := sqlLikeKeyValues(mid, true, true); len(whereString) > 0 {
-			whereStrings = append(whereStrings, whereString)
+			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 		}
 	}
 	after := paramGinH(param["after"])
 	if after != nil {
 		if whereString := sqlLikeKeyValues(after, false, true); len(whereString) > 0 {
-			whereStrings = append(whereStrings, whereString)
+			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 		}
 	}
 	if param["search"] != nil && len(param["search"].(string)) > 0 && searchTargets != nil {
 		if whereString := sqlSearchValues(param["search"].(string), searchTargets); len(whereString) > 0 {
-			whereStrings = append(whereStrings, whereString)
+			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 		}
 	}
 	return strings.Join(whereStrings, " AND ")
@@ -92,7 +119,7 @@ func sqlKeyValuesFromMap(param gin.H) (string, string) {
 	return strings.Join(keys, ","), strings.Join(values, ",")
 }
 
-func sqlContentKeyValues(content gin.H, isOr bool) string {
+func sqlAndKeyValues(content gin.H) string {
 	keys, values := keysValuesFromParam(content)
 	wheres := []string{}
 	for i := 0; i < len(keys); i++ {
@@ -101,11 +128,22 @@ func sqlContentKeyValues(content gin.H, isOr bool) string {
 		wheres = append(wheres, k+"="+value)
 	}
 	if len(wheres) > 0 {
-		if isOr {
-			return fmt.Sprintf("(%s)", strings.Join(wheres, " OR "))
-		} else {
-			return fmt.Sprintf("(%s)", strings.Join(wheres, " AND "))
-		}
+		return strings.Join(wheres, " AND ")
+	} else {
+		return ""
+	}
+}
+
+func sqlOrKeyValues(content gin.H) string {
+	keys, values := keysValuesFromParam(content)
+	wheres := []string{}
+	for i := 0; i < len(keys); i++ {
+		k := keys[i]
+		value := values[i]
+		wheres = append(wheres, k+"="+value)
+	}
+	if len(wheres) > 0 {
+		return strings.Join(wheres, " OR ")
 	} else {
 		return ""
 	}
@@ -142,7 +180,7 @@ func sqlLikeKeyValues(like gin.H, isBefore bool, isAfter bool) string {
 		wheres = append(wheres, fmt.Sprintf("%s LIKE \"%s\"", k, v))
 	}
 	if len(wheres) > 0 {
-		return fmt.Sprintf("(%s)", strings.Join(wheres, " OR "))
+		return strings.Join(wheres, " OR ")
 	} else {
 		return ""
 	}
@@ -159,7 +197,7 @@ func sqlSearchValues(search string, targets []string) string {
 		}
 	}
 	if len(instrs) > 0 {
-		return fmt.Sprintf("(%s)", strings.Join(instrs, " OR "))
+		return strings.Join(instrs, " OR ")
 	} else {
 		return ""
 	}
@@ -190,14 +228,18 @@ func paramToGinH(c *gin.Context) (gin.H, error) {
 	// 这样读取字节流之后，整个c.request.body就已经读空啦。再次无法读到数据。
 	data, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		if TestType { panic(err)}
+		if TestType {
+			panic(err)
+		}
 		return nil, err
 	}
 
 	m := make(map[string]interface{})
 	err = json.Unmarshal(data, &m)
 	if err != nil {
-		if TestType { panic(err)}
+		if TestType {
+			panic(err)
+		}
 		return nil, err
 	}
 
@@ -213,6 +255,15 @@ func mapToGinH(value map[string]interface{}) gin.H {
 		typName := fmt.Sprintf("%v", reflect.TypeOf(v))
 		if strings.Compare(typName, "map[string]interface {}") == 0 {
 			result[k] = mapToGinH(v.(map[string]interface{}))
+		} else if strings.Compare(typName, "[]interface {}") == 0 {
+			list := []gin.H{}
+			for i := 0; i < len(v.([]interface{})); i++ {
+				item := v.([]interface{})[i]
+				if strings.Compare(reflect.TypeOf(item).String(), "map[string]interface {}") == 0 {
+					list = append(list, mapToGinH(item.(map[string]interface{})))
+				}
+			}
+			result[k] = list
 		}
 	}
 	return result
@@ -232,7 +283,9 @@ func paramInt(value interface{}, defaultValue int64) int64 {
 	case "string":
 		i, err := strconv.ParseInt(value.(string), 10, 64)
 		if err != nil {
-		if TestType { panic(err)}
+			if TestType {
+				panic(err)
+			}
 			return defaultValue
 		} else {
 			return i
@@ -261,7 +314,9 @@ func paramGinH(value interface{}) gin.H {
 		m := make(map[string]interface{})
 		err := json.Unmarshal([]byte(value.(string)), &m)
 		if err != nil {
-		if TestType { panic(err)}
+			if TestType {
+				panic(err)
+			}
 			return nil
 		} else {
 			return gin.H(m)

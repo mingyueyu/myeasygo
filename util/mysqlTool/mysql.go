@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -114,7 +112,7 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 	if err != nil {
 		errcode := errorCode(err)
 		if errcode != -1 && errcode == 1146 {
-			log.Printf("数据表%s不存在，尝试创建数据表", tableName)
+			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
 			sqlStr, err := sqlCeateFromName(dbName, tableName)
 			if err != nil {
 				if TestType {
@@ -129,8 +127,8 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 				}
 				return -1, errorCode(err), err
 			} else {
-				log.Printf("数据表%s创建成功", tableName)
-				log.Printf("\n==Insert-dbString:%s\n", dbString)
+				// fmt.Printf("数据表%s创建成功", tableName)
+				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
 				ret, err = db.Exec(dbString)
 				if err != nil {
 					if TestType {
@@ -362,15 +360,11 @@ func DifMysql(dbName string, table string, field string, where string) ([]gin.H,
 				record[columns[i]] = val
 			}
 		}
-		count, err := strconv.Atoi(record["COUNT(*)"].(string))
-		if err != nil {
-			if TestType {
-				panic(err)
-			}
-			return nil, errorCode(err), err
+		if record["COUNT(*)"] == nil {
+			return nil, 10013, errors.New("数据库获取计数失败")
 		}
 		resultMac := gin.H{
-			"count": count,
+			"count": record["COUNT(*)"].(int64),
 			"value": record[field],
 		}
 		result = append(result, resultMac)

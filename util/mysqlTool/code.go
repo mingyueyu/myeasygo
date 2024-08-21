@@ -107,6 +107,7 @@ func stringFromCode(code int64) string{
     case 10010: return "没配置数据库"
     case 10011: return "数据不存在，不能删除"
     case 10012: return "数据不存在，不能更新"
+    case 10013: return "数据库获取计数失败"
     // 数据相关
     case 10020: return "数据不存在"
     case 10021: return "数据已存在"
