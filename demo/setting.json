@@ -1,0 +1,40 @@
+{
+    "Name": "test",
+    "data": {
+        "url": "file:///Users/mingyueyu/Documents/mnt/sdc",
+        "port": 12000,
+        "origin": "*",
+        "loginTimeOut": 43200,
+        "email": "test@demo.com",
+        "imagePath": "/Users/mingyueyu/Documents/mnt/sdc/file/image",
+        "imageUrl": "file:///Users/mingyueyu/Documents/mnt/sdc/file/image",
+        "filePath": "/Users/mingyueyu/Documents/mnt/sdc/file",
+        "fileUrl": "file:///Users/mingyueyu/Documents/mnt/sdc/file",
+        "botUrl": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
+        "botUrlAlert": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
+        "mysqls": [
+            {
+                "name": "default",
+                "host": "localhost",
+                "port": 3306,
+                "user": "root",
+                "pwd": "12345678",
+                "tables": [
+                    {
+                        "name": "test",
+                        "content": "`name` varchar(128) NOT NULL COMMENT '名称',`age` int COMMENT '年龄',`IP` varchar(128) COMMENT 'IP'"
+                    }
+                ]
+            }
+        ],
+        "redis": {
+            "host": "localhost",
+            "port": 6379,
+            "pwd": "123456",
+            "db": 0
+        }
+    },
+    "test": {
+        "asker": "wDbpkEdaa"
+    }
+}
