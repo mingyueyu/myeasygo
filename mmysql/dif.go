@@ -33,7 +33,7 @@ func DifPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 				}
 				param = tparam
 			}
-			re, tcode, err := dif(param, dbName, tableName)
+			re, tcode, err := MysqlDif(param, dbName, tableName)
 			if err != nil {
 				if TestType {
 					panic(err)
@@ -59,7 +59,7 @@ func DifPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 	})
 }
 
-func dif(param gin.H, dbName string, tableName string) ([]gin.H, int64, error) {
+func MysqlDif(param gin.H, dbName string, tableName string) ([]gin.H, int64, error) {
 	table := tableNameFromeParam(param, tableName)
 	if param["field"] == nil || len(param["field"].(string)) == 0 {
 		return nil, 10004, errors.New("field参数不能为空")

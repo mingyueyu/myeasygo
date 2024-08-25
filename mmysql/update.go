@@ -32,7 +32,7 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 				}
 				param = tparam
 			}
-			re, tcode, err := update(param, dbName, tableName)
+			re, tcode, err := MysqlUpdate(param, dbName, tableName)
 			if err != nil {
 				if TestType {
 					panic(err)
@@ -57,7 +57,7 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 	})
 }
 
-func update(param gin.H, dbName string, tableName string) (gin.H, int64, error) {
+func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int64, error) {
 	table := tableNameFromeParam(param, tableName)
 	count, tcode, err := mysqlTool.UpdateMysql(dbName, table, sqlContentValue(param["content"].(gin.H)), whereString(param, nil))
 	if err != nil {

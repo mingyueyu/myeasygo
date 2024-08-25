@@ -26,7 +26,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 			}
 			param = tparam
 		}
-		re, tcode, err := detail(param, dbName, tableName)
+		re, tcode, err := MysqlDetail(param, dbName, tableName)
 		if err != nil {
 			if TestType {
 				panic(err)
@@ -68,7 +68,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 				}
 				param = tparam
 			}
-			re, tcode, err := detail(param, dbName, tableName)
+			re, tcode, err := MysqlDetail(param, dbName, tableName)
 			if err != nil {
 				if TestType {
 					panic(err)
@@ -93,7 +93,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 	})
 }
 
-func detail(param gin.H, dbName string, tableName string) (gin.H, int64, error) {
+func MysqlDetail(param gin.H, dbName string, tableName string) (gin.H, int64, error) {
 	table := tableNameFromeParam(param, tableName)
 	return mysqlTool.DetailMysql(dbName, table, whereString(param, nil))
 }

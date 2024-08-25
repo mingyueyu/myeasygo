@@ -66,7 +66,8 @@ func sqlTableName(tableName string) string {
 func sanitizeModel(model string) (string, error) {
 	// 这里应实现对model的检查，移除潜在的危险字符等
 	// 若发现model不合法，返回错误
-	if len(model) == 0 || strings.Contains(model, ";DROP TABLE") {
+	targer := strings.ReplaceAll(strings.ToUpper(model), " ", "") 
+	if len(targer) == 0 || strings.Contains(targer, ";DROPTABLE") {
 		return "", fmt.Errorf("invalid model")
 	}
 	return model, nil

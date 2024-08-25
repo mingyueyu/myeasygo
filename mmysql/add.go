@@ -41,7 +41,7 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 					param["content"].(gin.H)["IP"] = c.ClientIP()
 				}
 			}
-			re, tcode, err := add(param, dbName, tableName, withYear, withMouth)
+			re, tcode, err := MysqlAdd(param, dbName, tableName, withYear, withMouth)
 			if err != nil {
 				if TestType {
 					panic(err)
@@ -66,7 +66,7 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 	})
 }
 
-func add(param gin.H, dbName string, tableName string, withYear bool, withMouth bool) (gin.H, int64, error) {
+func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withMouth bool) (gin.H, int64, error) {
 	if param["content"] == nil {
 		return nil, 10004, errors.New("缺少参数 content")
 	}

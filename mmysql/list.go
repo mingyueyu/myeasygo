@@ -28,7 +28,7 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 			}
 			param = tparam
 		}
-		re, count, tcode, err := list(param, dbName, tableName, searchTargets)
+		re, count, tcode, err := MysqlList(param, dbName, tableName, searchTargets)
 		if err != nil {
 			if TestType {
 				panic(err)
@@ -74,7 +74,7 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 				}
 				param = tparam
 			}
-			re, count, tcode, err := list(param, dbName, tableName, searchTargets)
+			re, count, tcode, err := MysqlList(param, dbName, tableName, searchTargets)
 			if err != nil {
 				if TestType {
 					panic(err)
@@ -103,7 +103,7 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 	})
 }
 
-func list(param gin.H, dbName string, tableName string, searchTargets []string) ([]gin.H, int64, int64, error) {
+func MysqlList(param gin.H, dbName string, tableName string, searchTargets []string) ([]gin.H, int64, int64, error) {
 	// 处理列表数据
 	table := tableNameFromeParam(param, tableName)
 	sortString := fmt.Sprintf("%s %s", "createTime", "DESC")
