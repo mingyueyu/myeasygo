@@ -16,14 +16,17 @@ package myeasygo
 
 // func main() {
 // 	r := gin.Default()
+// 	// 跨域设置
 // 	r.Use(CORS(Options{Origin: "*"}))
 // 	r.Use(gin.Recovery())
+
 // 	// 读取配置
 // 	demo.SettingInit()
 // 	// 数据库demo
 // 	demo.MysqlInit(r)
 // 	// tea算法
 // 	system.TeaDemo()
+
 // 	r.Run(":12345")
 // }
 

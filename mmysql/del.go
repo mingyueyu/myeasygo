@@ -59,5 +59,10 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 
 func MysqlDel(param gin.H, dbName string, tableName string) (int64, int64, error) {
 	table := tableNameFromeParam(param, tableName)
-	return mysqlTool.DelectMysql(dbName, table, whereString(param, nil))
+	count, tcode, err := mysqlTool.DelectMysql(dbName, table, whereString(param, nil))
+	if tcode == 10010 {
+		dealwithMysql()
+		return mysqlTool.DelectMysql(dbName, table, whereString(param, nil))
+	}
+	return count, tcode, err
 }

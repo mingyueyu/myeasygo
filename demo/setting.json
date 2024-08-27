@@ -14,14 +14,14 @@
         "botUrlAlert": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
         "mysqls": [
             {
-                "name": "default",
+                "name": "testDB",
                 "host": "localhost",
                 "port": 3306,
                 "user": "root",
                 "pwd": "12345678",
                 "tables": [
                     {
-                        "name": "test",
+                        "name": "testTable",
                         "content": "`name` varchar(128) NOT NULL COMMENT '名称',`age` int COMMENT '年龄',`IP` varchar(128) COMMENT 'IP'"
                     }
                 ]

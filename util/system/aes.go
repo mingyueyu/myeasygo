@@ -15,7 +15,7 @@ import (
 	"github.com/wumansgy/goEncrypt/aes"
 )
 
-var TestType = false
+var TestType = true
 
 var aesSecretKey = ""
 
@@ -26,11 +26,11 @@ func AesInit(key string) {
 
 // 读取默认配置
 func ReadDefaultSetting() (*Setting_t, error) {
-	return ReadSetting("")
+	return ReadSetting("", "setting.ini")
 }
 
 // 读取配置
-func ReadSetting(path string) (*Setting_t, error) {
+func ReadSetting(path string, fileName string) (*Setting_t, error) {
 	if len(aesSecretKey) == 0 {
 		return nil, errors.New("aesSecretKey为空,请先设置aesSecretKey")
 	}
@@ -42,7 +42,7 @@ func ReadSetting(path string) (*Setting_t, error) {
 			}
 			return nil, err
 		}
-		path = fmt.Sprintf("%s/setting.ini", tPath)
+		path = fmt.Sprintf("%s/%s", tPath, fileName)
 	}
 	f, err := os.Open(path)
 	if err != nil {
@@ -178,6 +178,7 @@ func SetSetting(codePath string, fileName string) error {
 	}
 	// fmt.Printf("设置：%s\n加密结果:%s", jsonString(set), value)
 	// 保存到指定路径
+	saveToExePath(value, codePath, "setting.ini")
 	return saveToExeDefaultPath(value)
 }
 
@@ -197,6 +198,8 @@ func saveToExePath(value string, path string, fileName string) error {
 			return err
 		}
 		path = fmt.Sprintf("%s/%s", tPath, fileName)
+	} else {
+		path = fmt.Sprintf("%s/%s", path, fileName)
 	}
 
 	err := os.WriteFile(path, []byte(value), 0644) // 指定文件路径、数据和权限（这里为0644）

@@ -111,6 +111,7 @@ func stringFromCode(code int64) string{
     // 数据相关
     case 10020: return "数据不存在"
     case 10021: return "数据已存在"
+    case 10022: return "上传失败"
 
 
     default: return fmt.Sprintf("未知错误（%d）", code)

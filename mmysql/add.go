@@ -96,15 +96,18 @@ func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withM
 	}
 	keyStr, valueStr := sqlKeyValuesFromMap(content)
 	num, tcode, err := mysqlTool.AddMysql(dbName, table, keyStr, valueStr)
+	if tcode == 10010 {
+		dealwithMysql()
+		num, tcode, err = mysqlTool.AddMysql(dbName, table, keyStr, valueStr)
+	}
 	if err != nil {
 		if TestType {
 			panic(err)
 		}
 		return nil, tcode, err
-	} else {
-		// IP 不返回
-		delete(content, "IP")
-		content["ID"] = num
-		return content, 0, nil
 	}
+	// IP 不返回
+	delete(content, "IP")
+	content["ID"] = num
+	return content, 0, nil
 }

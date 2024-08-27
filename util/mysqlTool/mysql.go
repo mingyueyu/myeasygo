@@ -95,6 +95,7 @@ func targetSqlString(name string) (string, int64, error) {
 	return "", 10010, errors.New("没配置数据库")
 }
 
+
 // 增
 func AddMysql(dbName string, tableName string, keys string, values string) (int64, int64, error) {
 	db, tcode, err := dbFromName(dbName)
@@ -115,10 +116,11 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
 			sqlStr, err := sqlCeateFromName(dbName, tableName)
 			if err != nil {
+				// 没有数据库
 				if TestType {
 					panic(err)
 				}
-				return -1, 10020, err
+				return -1, 10010, err
 			}
 			_, err = db.Query(sqlStr)
 			if err != nil {
@@ -154,6 +156,8 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 	// fmt.Println("insert id:", id)
 	return id, 0, nil
 }
+
+
 
 // 删
 func DelectMysql(dbName string, table string, where string) (int64, int64, error) {
