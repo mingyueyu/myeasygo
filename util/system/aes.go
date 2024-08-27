@@ -15,7 +15,7 @@ import (
 	"github.com/wumansgy/goEncrypt/aes"
 )
 
-var TestType = true
+var TestType = false
 
 var aesSecretKey = ""
 

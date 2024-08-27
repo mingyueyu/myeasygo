@@ -36,5 +36,12 @@
     },
     "test": {
         "asker": "wDbpkEdaa"
+    },
+    "custom":{
+        "name": "abb",
+        "detail": {
+            "age": 32
+        }
     }
+
 }

@@ -4,6 +4,7 @@ type Setting_t struct {
 	Name string
 	Data SettingData_t
 	Test SettingTest_t
+	Custom interface{}
 	Code string // 校验码
 }
 

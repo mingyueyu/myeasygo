@@ -26,5 +26,6 @@ func SettingInit() {
 	}else{
 		fmt.Println("读取配置成功：", system.JsonString(setting))
 	}
+	fmt.Println("自定义数据是：", system.JsonString(setting.Custom.(map[string]interface{})["detail"]))
 	
 }
