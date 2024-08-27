@@ -7,7 +7,6 @@ package myeasygo
 
 // 	"github.com/gin-gonic/gin"
 // 	"github.com/mingyueyu/myeasygo/demo"
-// 	"github.com/mingyueyu/myeasygo/util/system"
 // )
 
 // type Options struct {
@@ -25,7 +24,9 @@ package myeasygo
 // 	// 数据库demo
 // 	demo.MysqlInit(r)
 // 	// tea算法
-// 	system.TeaDemo()
+// 	demo.TeaDemo()
+// 	// 缓存
+// 	demo.CacheInit()
 
 // 	r.Run(":12345")
 // }
