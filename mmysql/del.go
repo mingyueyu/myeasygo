@@ -13,16 +13,36 @@ func Delete(r *gin.Engine, relativePath string, dbName string, tableName string)
 
 func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result int64) (int64, int64, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
+		param, err := ParamToGinH(c)
 		if err != nil {
 			if TestType {
 				panic(err)
 			}
 			c.JSON(http.StatusOK, mysqlTool.ReturnFail(10001, err.Error()))
+			return
+		}
+		// 处理参数
+		if funcParam != nil {
+			tparam, tcode, err := funcParam(c, param)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
+				return
+			}
+			param = tparam
+		}
+		re, tcode, err := MysqlDel(param, dbName, tableName)
+		if err != nil {
+			if TestType {
+				panic(err)
+			}
+			c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
 		} else {
-			// 处理参数
-			if funcParam != nil {
-				tparam, tcode, err := funcParam(c, param)
+			// 处理返回值
+			if funcResult != nil {
+				tresult, tcode, err := funcResult(c, re)
 				if err != nil {
 					if TestType {
 						panic(err)
@@ -30,29 +50,9 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 					c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
 					return
 				}
-				param = tparam
+				re = tresult
 			}
-			re, tcode, err := MysqlDel(param, dbName, tableName)
-			if err != nil {
-				if TestType {
-					panic(err)
-				}
-				c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
-			} else {
-				// 处理返回值
-				if funcResult != nil {
-					tresult, tcode, err := funcResult(c, re)
-					if err != nil {
-						if TestType {
-							panic(err)
-						}
-						c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
-						return
-					}
-					re = tresult
-				}
-				c.JSON(http.StatusOK, mysqlTool.ReturnSuccess(re))
-			}
+			c.JSON(http.StatusOK, mysqlTool.ReturnSuccess(re))
 		}
 	})
 }

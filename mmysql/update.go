@@ -13,16 +13,36 @@ func Update(r *gin.Engine, relativePath string, dbName string, tableName string)
 
 func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int64, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
+		param, err := ParamToGinH(c)
 		if err != nil {
 			if TestType {
 				panic(err)
 			}
 			c.JSON(http.StatusOK, mysqlTool.ReturnFail(10001, err.Error()))
+			return
+		}
+		// 处理参数
+		if funcParam != nil {
+			tparam, tcode, err := funcParam(c, param)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
+				return
+			}
+			param = tparam
+		}
+		re, tcode, err := MysqlUpdate(param, dbName, tableName)
+		if err != nil {
+			if TestType {
+				panic(err)
+			}
+			c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
 		} else {
-			// 处理参数
-			if funcParam != nil {
-				tparam, tcode, err := funcParam(c, param)
+			// 处理结果
+			if funcResult != nil {
+				tresult, tcode, err := funcResult(c, re)
 				if err != nil {
 					if TestType {
 						panic(err)
@@ -30,34 +50,17 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 					c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
 					return
 				}
-				param = tparam
+				re = tresult
 			}
-			re, tcode, err := MysqlUpdate(param, dbName, tableName)
-			if err != nil {
-				if TestType {
-					panic(err)
-				}
-				c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
-			} else {
-				// 处理结果
-				if funcResult != nil {
-					tresult, tcode, err := funcResult(c, re)
-					if err != nil {
-						if TestType {
-							panic(err)
-						}
-						c.JSON(http.StatusOK, mysqlTool.ReturnFail(tcode, err.Error()))
-						return
-					}
-					re = tresult
-				}
-				c.JSON(http.StatusOK, mysqlTool.ReturnSuccess(re))
-			}
+			c.JSON(http.StatusOK, mysqlTool.ReturnSuccess(re))
 		}
+
 	})
 }
 
 func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int64, error) {
+	delete(param, "createTime")
+	delete(param, "modifyTime")
 	table := tableNameFromeParam(param, tableName)
 	count, tcode, err := mysqlTool.UpdateMysql(dbName, table, sqlContentValue(param["content"].(gin.H)), whereString(param, nil))
 	if tcode == 10010 {

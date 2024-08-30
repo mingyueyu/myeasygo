@@ -14,11 +14,10 @@ import (
 	"github.com/mingyueyu/myeasygo/util/system"
 )
 
-var TestType = false
+var TestType = true
 
 // 处理数据库配置
 func dealwithMysql() {
-	fmt.Println("dealwithMysql-------------------")
 	mysqls := system.MySqls
 	body := []mysqlTool.MySql_t{}
 	for i := 0; i < len(mysqls); i++ {
@@ -96,7 +95,6 @@ func whereString(param gin.H, searchTargets []string) string {
 	}
 	if param["or"] != nil {
 		orType := reflect.TypeOf(param["or"]).String()
-
 		if strings.Compare(orType, "gin.H") == 0 {
 			or := paramGinH(param["or"])
 			if or != nil {
@@ -252,7 +250,7 @@ func keysValuesFromParam(scene gin.H) ([]string, []string) {
 	return keys, values
 }
 
-func paramToGinH(c *gin.Context) (gin.H, error) {
+func ParamToGinH(c *gin.Context) (gin.H, error) {
 
 	// 这样读取字节流之后，整个c.request.body就已经读空啦。再次无法读到数据。
 	data, err := io.ReadAll(c.Request.Body)
@@ -310,6 +308,9 @@ func paramInt(value interface{}, defaultValue int64) int64 {
 	case "float64":
 		return int64(value.(float64))
 	case "string":
+		// if len(value.(string)) == 0{
+		// 	return defaultValue
+		// }
 		i, err := strconv.ParseInt(value.(string), 10, 64)
 		if err != nil {
 			if TestType {

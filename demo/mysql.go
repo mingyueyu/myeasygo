@@ -7,7 +7,7 @@ import (
 
 func MysqlInit(r *gin.Engine){
 	// 数据库相关
-	mmysql.Add(r, "/api/add", "testDB", "testTable", false, false, false)
+	mmysql.Add(r, "/api/add", "testDB", "testTable")
 	mmysql.Delete(r, "/api/delete", "testDB", "testTable")
 	mmysql.Update(r, "/api/update", "testDB", "testTable")
 	mmysql.List(r, "/api/list", "testDB", "testTable", []string{"name", "age"})

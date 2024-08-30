@@ -49,7 +49,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 		}
 	})
 	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
+		param, err := ParamToGinH(c)
 		if err != nil {
 			if TestType {
 				panic(err)

@@ -55,7 +55,7 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 		}
 	})
 	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
+		param, err := ParamToGinH(c)
 		if err != nil {
 			if TestType {
 				panic(err)
@@ -114,7 +114,7 @@ func MysqlList(param gin.H, dbName string, tableName string, searchTargets []str
 			sort := array[i]
 			if sort != nil {
 				if sort["field"] != nil && len(sort["field"].(string)) > 0 && sort["type"] != nil && len(sort["type"].(string)) > 0 {
-					sorts = append(sorts, fmt.Sprintf("%s %s", sort["field"], sort["type"])) 
+					sorts = append(sorts, fmt.Sprintf("%s %s", sort["field"], sort["type"]))
 				}
 			}
 		}

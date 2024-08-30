@@ -14,7 +14,7 @@ func Dif(r *gin.Engine, relativePath string, dbName string, tableName string) {
 
 func DifPlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result []gin.H) ([]gin.H, int64, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
+		param, err := ParamToGinH(c)
 		if err != nil {
 			if TestType {
 				panic(err)

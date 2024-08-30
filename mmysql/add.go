@@ -10,13 +10,17 @@ import (
 	"github.com/mingyueyu/myeasygo/util/mysqlTool"
 )
 
-func Add(r *gin.Engine, relativePath string, dbName string, tableName string, withYear bool, withMouth bool, wihtIp bool) {
+func Add(r *gin.Engine, relativePath string, dbName string, tableName string) {
+	AddPlus(r, relativePath, dbName, tableName, false, false, false, nil, nil)
+}
+
+func AddPro(r *gin.Engine, relativePath string, dbName string, tableName string, withYear bool, withMouth bool, wihtIp bool) {
 	AddPlus(r, relativePath, dbName, tableName, withYear, withMouth, wihtIp, nil, nil)
 }
 
 func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string, withYear bool, withMouth bool, wihtIp bool, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int64, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
-		param, err := paramToGinH(c)
+		param, err := ParamToGinH(c)
 		if err != nil {
 			if TestType {
 				panic(err)
@@ -40,6 +44,8 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 				if param["content"] != nil {
 					param["content"].(gin.H)["IP"] = c.ClientIP()
 				}
+			} else {
+				delete(param, "IP")
 			}
 			re, tcode, err := MysqlAdd(param, dbName, tableName, withYear, withMouth)
 			if err != nil {
@@ -67,6 +73,8 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 }
 
 func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withMouth bool) (gin.H, int64, error) {
+	delete(param, "createTime")
+	delete(param, "modifyTime")
 	if param["content"] == nil {
 		return nil, 10004, errors.New("缺少参数 content")
 	}
