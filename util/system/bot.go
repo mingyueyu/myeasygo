@@ -14,7 +14,7 @@ func Bot(content string) {
 	botFromUrl(content, SettingData.BotUrl)
 }
 
-func BotErr(code int, errString string) {
+func BotErr(code int64, errString string) {
 	botFromUrl(fmt.Sprintf("(code %d)%s", code, errString), SettingData.BotUrl)
 }
 

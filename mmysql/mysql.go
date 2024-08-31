@@ -14,7 +14,7 @@ import (
 	"github.com/mingyueyu/myeasygo/util/system"
 )
 
-var TestType = true
+var TestType = false
 
 // 处理数据库配置
 func dealwithMysql() {

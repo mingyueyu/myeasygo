@@ -106,7 +106,7 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 		return -1, tcode, err
 	}
 	defer db.Close()
-	dbString := fmt.Sprintf("insert into %s(%s) values(%s)", tableName, keys, values)
+	dbString := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", tableName, keys, values)
 	// fmt.Printf("数据库新增：%s", dbString)
 	//	// 2. exec
 	ret, err := db.Exec(dbString) //exec执行（Python中的exec就是执行字符串代码的，返回值是None，eval有返回值）
@@ -160,7 +160,7 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 
 
 // 删
-func DelectMysql(dbName string, table string, where string) (int64, int64, error) {
+func DelectMysql(dbName string, tableName string, where string) (int64, int64, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -171,13 +171,40 @@ func DelectMysql(dbName string, table string, where string) (int64, int64, error
 	if len(where) == 0 {
 		return 0, 10003, errors.New("where 不能为空")
 	}
-	dbString := "DELETE FROM " + table + " WHERE " + where
+	dbString := "DELETE FROM " + tableName + " WHERE " + where
 	result, err := db.Exec(dbString)
 	if err != nil {
-		if TestType {
-			panic(err)
+		errcode := errorCode(err)
+		if errcode != -1 && errcode == 1146 {
+			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
+			sqlStr, err := sqlCeateFromName(dbName, tableName)
+			if err != nil {
+				// 没有数据库
+				if TestType {
+					panic(err)
+				}
+				return 0, 10010, err
+			}
+			_, err = db.Query(sqlStr)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				return 0, errorCode(err), err
+			} else {
+				// fmt.Printf("数据表%s创建成功", tableName)
+				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
+				result, err = db.Exec(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return 0, errorCode(err), err
+				}
+			}
+		} else {
+			return 0, errorCode(err), err
 		}
-		return 0, errorCode(err), err
 	}
 	rowNum, err := result.RowsAffected()
 	if err != nil {
@@ -192,7 +219,7 @@ func DelectMysql(dbName string, table string, where string) (int64, int64, error
 }
 
 // 改
-func UpdateMysql(dbName string, table string, content string, where string) (int64, int64, error) {
+func UpdateMysql(dbName string, tableName string, content string, where string) (int64, int64, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -203,13 +230,40 @@ func UpdateMysql(dbName string, table string, content string, where string) (int
 	if len(where) == 0 {
 		return 0, 10003, errors.New("缺少where条件")
 	}
-	dbString := "UPDATE " + table + " SET " + content + " WHERE " + where
+	dbString := "UPDATE " + tableName + " SET " + content + " WHERE " + where
 	result, err := db.Exec(dbString)
 	if err != nil {
-		if TestType {
-			panic(err)
+		errcode := errorCode(err)
+		if errcode != -1 && errcode == 1146 {
+			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
+			sqlStr, err := sqlCeateFromName(dbName, tableName)
+			if err != nil {
+				// 没有数据库
+				if TestType {
+					panic(err)
+				}
+				return 0, 10010, err
+			}
+			_, err = db.Query(sqlStr)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				return 0, errorCode(err), err
+			} else {
+				// fmt.Printf("数据表%s创建成功", tableName)
+				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
+				result, err = db.Exec(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return 0, errorCode(err), err
+				}
+			}
+		} else {
+			return 0, errorCode(err), err
 		}
-		return 0, errorCode(err), err
 	}
 	rowsCount, _ := result.RowsAffected()
 	// fmt.Printf("update success, affected rows:[%d]\n", rowsCount)
@@ -218,7 +272,7 @@ func UpdateMysql(dbName string, table string, content string, where string) (int
 }
 
 // 查
-func ListMysql(dbName string, table string, where string, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int64, error) {
+func ListMysql(dbName string, tableName string, where string, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int64, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -241,14 +295,41 @@ func ListMysql(dbName string, table string, where string, sort string, pageNumbe
 	if pageSize <= 0 {
 		pageSize = 20
 	}
-	dbString := fmt.Sprintf("SELECT * FROM %s %s %s LIMIT %d,%d;", table, whereString, orderByString, pageNumber*pageSize, pageSize)
+	dbString := fmt.Sprintf("SELECT * FROM %s %s %s LIMIT %d,%d;", tableName, whereString, orderByString, pageNumber*pageSize, pageSize)
 	// fmt.Println("List-dbString", dbString)
 	rows, err := db.Query(dbString)
 	if err != nil {
-		if TestType {
-			panic(err)
+		errcode := errorCode(err)
+		if errcode != -1 && errcode == 1146 {
+			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
+			sqlStr, err := sqlCeateFromName(dbName, tableName)
+			if err != nil {
+				// 没有数据库
+				if TestType {
+					panic(err)
+				}
+				return nil, 0, 10010, err
+			}
+			_, err = db.Query(sqlStr)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				return nil, 0, errorCode(err), err
+			} else {
+				// fmt.Printf("数据表%s创建成功", tableName)
+				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
+				rows, err = db.Query(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return nil, 0, errorCode(err), err
+				}
+			}
+		} else {
+			return nil, 0, errorCode(err), err
 		}
-		return nil, 0, errorCode(err), err
 	}
 	defer rows.Close()
 	columns, _ := rows.Columns()
@@ -288,7 +369,7 @@ func ListMysql(dbName string, table string, where string, sort string, pageNumbe
 		result = append(result, record)
 		//isContentTargetOrderId = true
 	}
-	count, tcode, err := CheckCount(dbName, table, where)
+	count, tcode, err := CheckCount(dbName, tableName, where)
 	if err != nil {
 		if TestType {
 			panic(err)
@@ -313,7 +394,7 @@ func DetailMysql(dbName string, table string, where string) (gin.H, int64, error
 	}
 }
 
-func DifMysql(dbName string, table string, field string, where string) ([]gin.H, int64, error) {
+func DifMysql(dbName string, tableName string, field string, where string) ([]gin.H, int64, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -327,13 +408,40 @@ func DifMysql(dbName string, table string, field string, where string) ([]gin.H,
 	if len(where) > 0 {
 		whereString = fmt.Sprintf("WHERE %s", where)
 	}
-	dbString := fmt.Sprintf("SELECT DISTINCT %s, COUNT(*) FROM %s %s GROUP BY %s %s;", field, table, whereString, field, orderByString)
+	dbString := fmt.Sprintf("SELECT DISTINCT %s, COUNT(*) FROM %s %s GROUP BY %s %s;", field, tableName, whereString, field, orderByString)
 	rows, err := db.Query(dbString)
 	if err != nil {
-		if TestType {
-			panic(err)
+		errcode := errorCode(err)
+		if errcode != -1 && errcode == 1146 {
+			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
+			sqlStr, err := sqlCeateFromName(dbName, tableName)
+			if err != nil {
+				// 没有数据库
+				if TestType {
+					panic(err)
+				}
+				return nil, 10010, err
+			}
+			_, err = db.Query(sqlStr)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				return nil, errorCode(err), err
+			} else {
+				// fmt.Printf("数据表%s创建成功", tableName)
+				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
+				rows, err = db.Query(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return nil, errorCode(err), err
+				}
+			}
+		} else {
+			return nil, errorCode(err), err
 		}
-		return nil, errorCode(err), err
 	}
 	defer rows.Close()
 	//字典类型
