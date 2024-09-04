@@ -2,12 +2,10 @@ package mmysql
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mingyueyu/myeasygo/util/mysqlTool"
-	"github.com/mingyueyu/myeasygo/util/system"
 )
 
 func Dif(r *gin.Engine, relativePath string, dbName string, tableName string) {
