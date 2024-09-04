@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
@@ -70,7 +69,7 @@ func Cleanup() {
 	c.items.Range(func(key, value interface{}) bool {
 		cacheItem := value.(CacheItem)
 		if now > cacheItem.Expiration {
-			fmt.Println(key, ":", value)
+			// fmt.Println(key, ":", value)
 			c.items.Delete(key)
 		}
 		return true

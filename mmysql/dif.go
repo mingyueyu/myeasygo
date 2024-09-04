@@ -2,10 +2,12 @@ package mmysql
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mingyueyu/myeasygo/util/mysqlTool"
+	"github.com/mingyueyu/myeasygo/util/system"
 )
 
 func Dif(r *gin.Engine, relativePath string, dbName string, tableName string) {
@@ -67,7 +69,7 @@ func MysqlDif(param gin.H, dbName string, tableName string) ([]gin.H, int64, err
 	list, tcode, err := mysqlTool.DifMysql(dbName, table, param["field"].(string), whereString(param, nil))
 	if tcode == 10010 {
 		dealwithMysql()
-		return mysqlTool.DifMysql(dbName, table, param["field"].(string), whereString(param, nil))
+		list, tcode, err = mysqlTool.DifMysql(dbName, table, param["field"].(string), whereString(param, nil))
 	}
 	return list, tcode, err
 }

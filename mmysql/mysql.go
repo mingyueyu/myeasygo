@@ -89,8 +89,8 @@ func whereString(param gin.H, searchTargets []string) string {
 	whereStrings := []string{}
 	and := paramGinH(param["and"])
 	if and != nil {
-		if whereString := sqlAndKeyValues(and); len(whereString) > 0 {
-			whereStrings = append(whereStrings, fmt.Sprintf("(%s)",whereString))
+		if whereString := sqlKeyValues(and, "AND"); len(whereString) > 0 {
+			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 		}
 	}
 	if param["or"] != nil {
@@ -98,8 +98,8 @@ func whereString(param gin.H, searchTargets []string) string {
 		if strings.Compare(orType, "gin.H") == 0 {
 			or := paramGinH(param["or"])
 			if or != nil {
-				if whereString := sqlOrKeyValues(or); len(whereString) > 0 {
-					whereStrings = append(whereStrings, fmt.Sprintf("(%s)",whereString))
+				if whereString := sqlKeyValues(or, "OR"); len(whereString) > 0 {
+					whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 				}
 			}
 		} else if strings.Compare(orType, "[]gin.H") == 0 {
@@ -107,7 +107,7 @@ func whereString(param gin.H, searchTargets []string) string {
 			targetList := []string{}
 			for i := 0; i < len(list); i++ {
 				or := list[i]
-				if whereString := sqlOrKeyValues(or); len(whereString) > 0 {
+				if whereString := sqlKeyValues(or, "OR"); len(whereString) > 0 {
 					targetList = append(targetList, whereString)
 				}
 			}
@@ -146,46 +146,22 @@ func sqlKeyValuesFromMap(param gin.H) (string, string) {
 	return strings.Join(keys, ","), strings.Join(values, ",")
 }
 
-func sqlAndKeyValues(content gin.H) string {
+func sqlKeyValues(content gin.H, spliceStrig string) string {
 	keys, values := keysValuesFromParam(content)
 	wheres := []string{}
 	for i := 0; i < len(keys); i++ {
 		k := keys[i]
 		value := values[i]
-		wheres = append(wheres, k+"="+value)
+		if strings.Compare(value, "\"IS NOT NULL\"") == 0 {
+			wheres = append(wheres, k+" IS NOT NULL")
+		} else if strings.Compare(value, "IS NULL") == 0 {
+			wheres = append(wheres, k+" IS NULL")
+		} else {
+			wheres = append(wheres, k+"="+value)
+		}
 	}
 	if len(wheres) > 0 {
-		return strings.Join(wheres, " AND ")
-	} else {
-		return ""
-	}
-}
-
-func sqlOrKeyValues(content gin.H) string {
-	keys, values := keysValuesFromParam(content)
-	wheres := []string{}
-	for i := 0; i < len(keys); i++ {
-		k := keys[i]
-		value := values[i]
-		wheres = append(wheres, k+"="+value)
-	}
-	if len(wheres) > 0 {
-		return strings.Join(wheres, " OR ")
-	} else {
-		return ""
-	}
-}
-
-func sqlContentValue(content gin.H) string {
-	keys, values := keysValuesFromParam(content)
-	contents := []string{}
-	for i := 0; i < len(keys); i++ {
-		k := keys[i]
-		value := values[i]
-		contents = append(contents, k+"="+value)
-	}
-	if len(contents) > 0 {
-		return strings.Join(contents, ",")
+		return strings.Join(wheres, " "+spliceStrig+" ")
 	} else {
 		return ""
 	}
@@ -235,6 +211,8 @@ func keysValuesFromParam(scene gin.H) ([]string, []string) {
 	values := []string{}
 	for k, v := range scene {
 		if v == nil {
+			keys = append(keys, k)
+			values = append(values, "IS NULL")
 			continue
 		}
 		value := ""
@@ -355,22 +333,3 @@ func paramGinH(value interface{}) gin.H {
 		return nil
 	}
 }
-
-// func wrap(handler HandlerFunc) func(c *gin.Context) {
-// 	return func(c *gin.Context) {
-// 		code, data, err := handler(c)
-// 		if err != nil {
-// 			c.JSON(http.StatusOK, gin.H{
-// 				"code": code,         //状态
-// 				"msg":  mysqlTool.StringFromCode(code), //描述信息
-// 				"data": err.Error(), // 错误信息
-// 			})
-// 			return
-// 		}
-// 		c.JSON(http.StatusOK, gin.H{
-// 			"code": 0, //状态
-// 			"msg":  "Success",     //描述信息
-// 			"data": data,           //数据
-// 		})
-// 	}
-// }

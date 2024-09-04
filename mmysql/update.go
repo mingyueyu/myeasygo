@@ -62,10 +62,10 @@ func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int64, er
 	delete(param, "createTime")
 	delete(param, "modifyTime")
 	table := tableNameFromeParam(param, tableName)
-	count, tcode, err := mysqlTool.UpdateMysql(dbName, table, sqlContentValue(param["content"].(gin.H)), whereString(param, nil))
+	count, tcode, err := mysqlTool.UpdateMysql(dbName, table, sqlKeyValues(param["content"].(gin.H), ","), whereString(param, nil))
 	if tcode == 10010 {
 		dealwithMysql()
-		count, tcode, err = mysqlTool.UpdateMysql(dbName, table, sqlContentValue(param["content"].(gin.H)), whereString(param, nil))
+		count, tcode, err = mysqlTool.UpdateMysql(dbName, table, sqlKeyValues(param["content"].(gin.H), ","), whereString(param, nil))
 	}
 	if err != nil {
 		if TestType {

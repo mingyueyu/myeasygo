@@ -22,7 +22,7 @@
                 "tables": [
                     {
                         "name": "testTable",
-                        "content": "`name` varchar(128) NOT NULL COMMENT '名称',`age` int COMMENT '年龄',`IP` varchar(128) COMMENT 'IP'"
+                        "content": "`name` varchar(128) NOT NULL COMMENT '名称',`age` int COMMENT '年龄',`IP` varchar(128) COMMENT 'IP',`remark` varchar(128) COMMENT '备注'"
                     }
                 ]
             }

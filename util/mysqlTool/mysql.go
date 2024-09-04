@@ -452,7 +452,7 @@ func DifMysql(dbName string, tableName string, field string, where string) ([]gi
 	for i := range values {
 		scanArgs[i] = &values[i]
 	}
-	var result []gin.H
+	var result = []gin.H{}
 	for rows.Next() {
 		//将行数据保存到record字典
 		err = rows.Scan(scanArgs...)
