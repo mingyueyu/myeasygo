@@ -11,7 +11,7 @@ func Detail(r *gin.Engine, relativePath string, dbName string, tableName string)
 	DetailPlus(r, relativePath, dbName, tableName, nil, nil)
 }
 
-func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int64, error)) {
+func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int, error)) {
 	r.GET(relativePath, func(c *gin.Context) {
 		param := paramFromGet(c)
 		// 处理参数
@@ -93,7 +93,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 	})
 }
 
-func MysqlDetail(param gin.H, dbName string, tableName string) (gin.H, int64, error) {
+func MysqlDetail(param gin.H, dbName string, tableName string) (gin.H, int, error) {
 	table := tableNameFromeParam(param, tableName)
 	re, tcode, err := mysqlTool.DetailMysql(dbName, table, whereString(param, nil))
 	if tcode == 10010 {

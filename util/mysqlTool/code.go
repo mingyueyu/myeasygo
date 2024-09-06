@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func stringFromCode(code int64) string{
+func stringFromCode(code int) string{
     switch code {
     case 0: return "成功"
     case 1005: return "创建表失败"
@@ -118,7 +118,7 @@ func stringFromCode(code int64) string{
     }
 }
 
-func ReturnFail(code int64, data interface{}) gin.H {
+func ReturnFail(code int, data interface{}) gin.H {
     return gin.H{
         "code": code,
         "data": data,
@@ -127,7 +127,7 @@ func ReturnFail(code int64, data interface{}) gin.H {
 }
 
 func ReturnSuccess(data interface{}) gin.H {
-    code := int64(0)
+    code := 0
     return gin.H{
         "code": code,
         "data": data,

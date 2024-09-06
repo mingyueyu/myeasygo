@@ -18,7 +18,7 @@ func AddPro(r *gin.Engine, relativePath string, dbName string, tableName string,
 	AddPlus(r, relativePath, dbName, tableName, withYear, withMouth, wihtIp, nil, nil)
 }
 
-func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string, withYear bool, withMouth bool, wihtIp bool, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int64, error)) {
+func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string, withYear bool, withMouth bool, wihtIp bool, funcParam func(c *gin.Context, param gin.H) (gin.H, int, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
 		param, err := ParamToGinH(c)
 		if err != nil {
@@ -72,7 +72,7 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 	})
 }
 
-func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withMouth bool) (gin.H, int64, error) {
+func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withMouth bool) (gin.H, int, error) {
 	delete(param, "createTime")
 	delete(param, "modifyTime")
 	if param["content"] == nil {

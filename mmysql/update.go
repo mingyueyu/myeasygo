@@ -11,7 +11,7 @@ func Update(r *gin.Engine, relativePath string, dbName string, tableName string)
 	UpdatePlus(r, relativePath, dbName, tableName, nil, nil)
 }
 
-func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int64, error)) {
+func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
 		param, err := ParamToGinH(c)
 		if err != nil {
@@ -58,7 +58,7 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 	})
 }
 
-func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int64, error) {
+func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int, error) {
 	delete(param, "createTime")
 	delete(param, "modifyTime")
 	table := tableNameFromeParam(param, tableName)

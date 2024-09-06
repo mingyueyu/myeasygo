@@ -11,7 +11,7 @@ func Delete(r *gin.Engine, relativePath string, dbName string, tableName string)
 	DeletePlus(r, relativePath, dbName, tableName, nil, nil)
 }
 
-func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int64, error), funcResult func(c *gin.Context, result int64) (int64, int64, error)) {
+func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int, error), funcResult func(c *gin.Context, result int64) (int64, int, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
 		param, err := ParamToGinH(c)
 		if err != nil {
@@ -57,7 +57,7 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 	})
 }
 
-func MysqlDel(param gin.H, dbName string, tableName string) (int64, int64, error) {
+func MysqlDel(param gin.H, dbName string, tableName string) (int64, int, error) {
 	table := tableNameFromeParam(param, tableName)
 	count, tcode, err := mysqlTool.DelectMysql(dbName, table, whereString(param, nil))
 	if tcode == 10010 {

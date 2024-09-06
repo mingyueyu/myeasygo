@@ -41,7 +41,7 @@ func MysqlToolInit(params []MySql_t) {
 	mysqls = params
 }
 
-func dbFromName(dbName string) (*sql.DB, int64, error) {
+func dbFromName(dbName string) (*sql.DB, int, error) {
 	if dbs[dbName] != nil {
 		// 尝试从存储中获取已存在的数据库连接。
 		target := dbs[dbName].(*sql.DB)
@@ -85,7 +85,7 @@ func dbFromName(dbName string) (*sql.DB, int64, error) {
 	}
 }
 
-func targetSqlString(name string) (string, int64, error) {
+func targetSqlString(name string) (string, int, error) {
 	for i := 0; i < len(mysqls); i++ {
 		item := mysqls[i]
 		if strings.Compare(item.Name, name) == 0 {
@@ -97,7 +97,7 @@ func targetSqlString(name string) (string, int64, error) {
 
 
 // 增
-func AddMysql(dbName string, tableName string, keys string, values string) (int64, int64, error) {
+func AddMysql(dbName string, tableName string, keys string, values string) (int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -160,7 +160,7 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 
 
 // 删
-func DelectMysql(dbName string, tableName string, where string) (int64, int64, error) {
+func DelectMysql(dbName string, tableName string, where string) (int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -219,7 +219,7 @@ func DelectMysql(dbName string, tableName string, where string) (int64, int64, e
 }
 
 // 改
-func UpdateMysql(dbName string, tableName string, content string, where string) (int64, int64, error) {
+func UpdateMysql(dbName string, tableName string, content string, where string) (int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -272,7 +272,7 @@ func UpdateMysql(dbName string, tableName string, content string, where string) 
 }
 
 // 查
-func ListMysql(dbName string, tableName string, where string, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int64, error) {
+func ListMysql(dbName string, tableName string, where string, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -379,7 +379,7 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 	return result, count, 0, nil
 }
 
-func DetailMysql(dbName string, table string, where string) (gin.H, int64, error) {
+func DetailMysql(dbName string, table string, where string) (gin.H, int, error) {
 	res, count, tcode, err := ListMysql(dbName, table, where, "", 0, 1)
 	if err != nil {
 		if TestType {
@@ -394,7 +394,7 @@ func DetailMysql(dbName string, table string, where string) (gin.H, int64, error
 	}
 }
 
-func DifMysql(dbName string, tableName string, field string, where string) ([]gin.H, int64, error) {
+func DifMysql(dbName string, tableName string, field string, where string) ([]gin.H, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -456,6 +456,9 @@ func DifMysql(dbName string, tableName string, field string, where string) ([]gi
 	for rows.Next() {
 		//将行数据保存到record字典
 		err = rows.Scan(scanArgs...)
+		if err != nil {
+			return nil, 10020, errors.New("数据不存在")
+		}
 		record := make(map[string]interface{})
 		for i, col := range values {
 			if col != nil {
@@ -485,7 +488,7 @@ func DifMysql(dbName string, tableName string, field string, where string) ([]gi
 }
 
 // 检查数量
-func CheckCount(dbName string, table string, where string) (int64, int64, error) {
+func CheckCount(dbName string, table string, where string) (int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -523,19 +526,7 @@ func CheckCount(dbName string, table string, where string) (int64, int64, error)
 	return total, 0, nil
 }
 
-func jsonString(mapData interface{}) string {
-	j, err := json.MarshalIndent(mapData, "", " ")
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		// fmt.Println("json格式化失败：", err)
-		return ""
-	}
-	return string(j)
-}
-
-func errorCodeMsg(e error) (int64, string) {
+func errorCodeMsg(e error) (int, string) {
 	target := ERROR_T{}
 	j, err := json.MarshalIndent(e, "", " ")
 	if err != nil {
@@ -545,10 +536,11 @@ func errorCodeMsg(e error) (int64, string) {
 	if err != nil || target.Number == 0 {
 		return -1, "error绑定失败"
 	}
-	return target.Number, target.Message
+	// 强制转int
+	return int(target.Number), target.Message
 }
 
-func errorCode(e error) int64 {
+func errorCode(e error) int {
 	code, _ := errorCodeMsg(e)
 	return code
 }
