@@ -157,7 +157,19 @@ func sqlKeyValues(content gin.H, spliceStrig string) string {
 		} else if strings.Compare(value, "IS NULL") == 0 {
 			wheres = append(wheres, k+" IS NULL")
 		} else {
-			wheres = append(wheres, k+"="+value)
+			if strings.LastIndex(k, "-") == len(k)-1 {
+				k = k[:len(k)-1]
+				value = k + "-" + value
+				wheres = append(wheres, k+"="+value)
+			} else if strings.LastIndex(k, "+") == len(k)-1 {
+				k = k[:len(k)-1]
+				value = k + "+" + value
+				wheres = append(wheres, k+"="+value)
+			} else if strings.LastIndex(k, ">=") == len(k)-2 || strings.LastIndex(k, "<=") == len(k)-2 || strings.LastIndex(k, ">") == len(k)-1 || strings.LastIndex(k, "<") == len(k)-1  {
+				wheres = append(wheres, k+value)
+			} else {
+				wheres = append(wheres, k+"="+value)
+			}
 		}
 	}
 	if len(wheres) > 0 {
