@@ -107,7 +107,7 @@ func whereString(param gin.H, searchTargets []string) string {
 			targetList := []string{}
 			for i := 0; i < len(list); i++ {
 				or := list[i]
-				if whereString := sqlKeyValues(or, "OR"); len(whereString) > 0 {
+				if whereString := sqlKeyValues(or, "AND"); len(whereString) > 0 {
 					targetList = append(targetList, whereString)
 				}
 			}

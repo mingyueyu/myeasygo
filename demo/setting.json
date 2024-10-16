@@ -14,7 +14,7 @@
         "botUrlAlert": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
         "mysqls": [
             {
-                "name": "testDB",
+                "name": "testdb",
                 "host": "localhost",
                 "port": 3306,
                 "user": "root",

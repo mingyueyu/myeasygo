@@ -15,7 +15,7 @@ func SettingInit() {
 	// 设置配置(正式环境不需要，只要被加密的数据文件)
 	err := system.SetSetting("/Users/mingyueyu/Desktop/Me/git/myeasygo/demo", "setting.json")
 	if err != nil {
-		fmt.Println("设置配置失败：", err)
+		// fmt.Println("设置配置失败：", err)
 		return
 	}
 	// 读取默认配置

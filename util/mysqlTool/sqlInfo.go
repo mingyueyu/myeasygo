@@ -7,6 +7,10 @@ import (
 
 )
 
+func sqlCreateDbFromName(dbName string) string {
+	return fmt.Sprintf("CREATE DATABASE %s;", dbName)
+}
+
 func sqlCeateFromName(dbName string, tableName string) (string, error) {
 	defaultTableName := sqlTableName(tableName)
 	// 先取相应的数据库数据

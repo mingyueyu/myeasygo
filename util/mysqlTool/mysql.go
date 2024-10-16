@@ -34,6 +34,7 @@ type ERROR_T struct {
 }
 
 var TestType = false
+var CreateDbWhenNoDb = false
 var mysqls = []MySql_t{}
 var dbs = gin.H{}
 
@@ -71,6 +72,7 @@ func dbFromName(dbName string) (*sql.DB, int, error) {
 		}
 		return nil, tcode, err
 	}
+	// fmt.Println(sqlString)
 	// 如果不存在可用的数据库连接，尝试创建新的数据库连接。
 	target, err := sql.Open("mysql", sqlString)
 	if err != nil {
@@ -95,6 +97,15 @@ func targetSqlString(name string) (string, int, error) {
 	return "", 10010, errors.New("没配置数据库")
 }
 
+func targetSqlStringWithNoDbName(name string) string {
+	for i := 0; i < len(mysqls); i++ {
+		item := mysqls[i]
+		if strings.Compare(item.Name, name) == 0 {
+			return fmt.Sprintf("%s:%s@tcp(%s:%d)/", item.User, item.Pwd, item.Host, item.Port)
+		}
+	}
+	return ""
+}
 
 // 增
 func AddMysql(dbName string, tableName string, keys string, values string) (int64, int, error) {
@@ -113,24 +124,8 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 	if err != nil {
 		errcode := errorCode(err)
 		if errcode != -1 && errcode == 1146 {
-			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
-			sqlStr, err := sqlCeateFromName(dbName, tableName)
-			if err != nil {
-				// 没有数据库
-				if TestType {
-					panic(err)
-				}
-				return -1, 10010, err
-			}
-			_, err = db.Query(sqlStr)
-			if err != nil {
-				if TestType {
-					panic(err)
-				}
-				return -1, errorCode(err), err
-			} else {
-				// fmt.Printf("数据表%s创建成功", tableName)
-				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
+			isOK, tcode, err := createTable(dbName, tableName)
+			if isOK {
 				ret, err = db.Exec(dbString)
 				if err != nil {
 					if TestType {
@@ -138,8 +133,24 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 					}
 					return -1, errorCode(err), err
 				}
+			} else {
+				return -1, tcode, err
+			}
+		} else if errcode == 1049 {
+			isOK, tcode, err := createDb(dbName, tableName)
+			if isOK {
+				ret, err = db.Exec(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return -1, errorCode(err), err
+				}
+			} else {
+				return -1, tcode, err
 			}
 		} else {
+			// fmt.Printf("get insert id fail,err:%v\n", err)
 			return -1, errorCode(err), err
 		}
 	}
@@ -156,8 +167,6 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 	// fmt.Println("insert id:", id)
 	return id, 0, nil
 }
-
-
 
 // 删
 func DelectMysql(dbName string, tableName string, where string) (int64, int, error) {
@@ -524,6 +533,49 @@ func CheckCount(dbName string, table string, where string) (int64, int, error) {
 		}
 	}
 	return total, 0, nil
+}
+
+// 没有数据库的创建数据库，并创建对应数据表
+func createDb(dbName string, tableName string) (bool, int, error) {
+	fmt.Println("数据库",dbName,"不存在，尝试创建数据库")
+	dsn := targetSqlStringWithNoDbName(dbName)
+    db, err := sql.Open("mysql", dsn)
+    if err != nil {
+        fmt.Println(err)
+    }
+    defer db.Close()
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s;", dbName))
+	if err != nil {
+		fmt.Println("数据库",dbName,"创建失败：", err)
+		if TestType {
+			panic(err)
+		}
+		return false, errorCode(err), err
+	} else {
+		fmt.Println("数据库",dbName,"创建成功")
+		return createTable(dbName, tableName)
+	}
+}
+
+func createTable(dbName string, tableName string) (bool, int, error) {
+	db, _, _ := dbFromName(dbName)
+	sqlStr, err := sqlCeateFromName(dbName, tableName)
+	if err != nil {
+		// 没有数据库
+		if TestType {
+			panic(err)
+		}
+		return false, 10010, err
+	}
+	_, err = db.Query(sqlStr)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return false, errorCode(err), err
+	} else {
+		return true, 0, nil
+	}
 }
 
 func errorCodeMsg(e error) (int, string) {
