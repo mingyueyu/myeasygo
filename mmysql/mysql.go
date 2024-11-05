@@ -114,7 +114,7 @@ func whereString(param gin.H, searchTargets []string) string {
 			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", strings.Join(targetList, " OR ")))
 		}
 	}
-
+	
 	before := paramGinH(param["before"])
 	if before != nil {
 		if whereString := sqlLikeKeyValues(before, true, false); len(whereString) > 0 {
@@ -133,6 +133,7 @@ func whereString(param gin.H, searchTargets []string) string {
 			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 		}
 	}
+	
 	if param["search"] != nil && len(param["search"].(string)) > 0 && searchTargets != nil {
 		if whereString := sqlSearchValues(param["search"].(string), searchTargets); len(whereString) > 0 {
 			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
@@ -152,9 +153,9 @@ func sqlKeyValues(content gin.H, spliceStrig string) string {
 	for i := 0; i < len(keys); i++ {
 		k := keys[i]
 		value := values[i]
-		if strings.Compare(value, "\"IS NOT NULL\"") == 0 {
+		if strings.Compare(value, "'IS NOT NULL'") == 0 {
 			wheres = append(wheres, k+" IS NOT NULL")
-		} else if strings.Compare(value, "IS NULL") == 0 {
+		} else if strings.Compare(value, "'IS NULL'") == 0 || strings.Compare(value, "IS NULL") == 0 {
 			wheres = append(wheres, k+" IS NULL")
 		} else {
 			if strings.LastIndex(k, "-") == len(k)-1 {
@@ -173,6 +174,7 @@ func sqlKeyValues(content gin.H, spliceStrig string) string {
 		}
 	}
 	if len(wheres) > 0 {
+		
 		return strings.Join(wheres, " "+spliceStrig+" ")
 	} else {
 		return ""
@@ -192,7 +194,7 @@ func sqlLikeKeyValues(like gin.H, isBefore bool, isAfter bool) string {
 			v = fmt.Sprintf("%%%s", v)
 		}
 
-		wheres = append(wheres, fmt.Sprintf("%s LIKE \"%s\"", k, v))
+		wheres = append(wheres, fmt.Sprintf("%s LIKE '%s'", k, v))
 	}
 	if len(wheres) > 0 {
 		return strings.Join(wheres, " OR ")
@@ -207,7 +209,7 @@ func sqlSearchValues(search string, targets []string) string {
 		for i := 0; i < len(targets); i++ {
 			item := targets[i]
 			if len(item) > 0 {
-				instrs = append(instrs, fmt.Sprintf("INSTR(%s,\"%s\")", item, search))
+				instrs = append(instrs, fmt.Sprintf("INSTR(%s,'%s')", item, search))
 			}
 		}
 	}
@@ -230,7 +232,9 @@ func keysValuesFromParam(scene gin.H) ([]string, []string) {
 		value := ""
 		typeName := reflect.TypeOf(v).Name()
 		if strings.Compare(typeName, "string") == 0 {
-			value = fmt.Sprintf("\"%s\"", v)
+			value = fmt.Sprintf("'%s'", v)
+		} else if strings.Compare(typeName, "H") == 0 || strings.Compare(typeName, "") == 0 {
+			value = fmt.Sprintf("'%s'", system.JsonString(v))
 		} else {
 			value = fmt.Sprintf("%v", v)
 		}

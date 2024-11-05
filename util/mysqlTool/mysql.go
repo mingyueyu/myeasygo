@@ -366,6 +366,11 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 				switch v := col.(type) {
 				case []byte:
 					val = string(v)
+					var v1 interface{}
+					json.Unmarshal(v, &v1)
+					if v1 != nil{
+						val = v1
+					}
 				case int64, float64, time.Time: // 根据实际数据库列类型添加更多的case
 					val = v
 				default:
@@ -537,22 +542,22 @@ func CheckCount(dbName string, table string, where string) (int64, int, error) {
 
 // 没有数据库的创建数据库，并创建对应数据表
 func createDb(dbName string, tableName string) (bool, int, error) {
-	fmt.Println("数据库",dbName,"不存在，尝试创建数据库")
+	fmt.Println("数据库", dbName, "不存在，尝试创建数据库")
 	dsn := targetSqlStringWithNoDbName(dbName)
-    db, err := sql.Open("mysql", dsn)
-    if err != nil {
-        fmt.Println(err)
-    }
-    defer db.Close()
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer db.Close()
 	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s;", dbName))
 	if err != nil {
-		fmt.Println("数据库",dbName,"创建失败：", err)
+		fmt.Println("数据库", dbName, "创建失败：", err)
 		if TestType {
 			panic(err)
 		}
 		return false, errorCode(err), err
 	} else {
-		fmt.Println("数据库",dbName,"创建成功")
+		fmt.Println("数据库", dbName, "创建成功")
 		return createTable(dbName, tableName)
 	}
 }
