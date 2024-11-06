@@ -118,12 +118,15 @@ func stringFromCode(code int) string{
     }
 }
 
-func ReturnFail(code int, data interface{}) gin.H {
-    return gin.H{
+func ReturnFail(code int, msg string) gin.H {
+    re := gin.H{
         "code": code,
-        "data": data,
         "msg":  stringFromCode(code),
     }
+    if msg != "" {
+        re["msg"] = msg
+    }
+    return re
 }
 
 func ReturnSuccess(data interface{}) gin.H {
