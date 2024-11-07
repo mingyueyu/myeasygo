@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 )
 
 func sqlCreateDbFromName(dbName string) string {
@@ -31,41 +30,6 @@ func sqlCeateFromName(dbName string, tableName string) (string, error) {
 func sqlTableName(tableName string) string {
 	return strings.Split(tableName, "_")[0]
 }
-
-// func sqlBanner(tableName string) string {
-// 	return sqlDefaultContent(tableName, "`title` varchar(128) COMMENT '标题',"+
-// 		"`url` varchar(256) COMMENT '网址'")
-// }
-
-// func sqlCheckin(tableName string) string {
-// 	return sqlDefaultContent(tableName, "`userId` varchar(128) NOT NULL COMMENT '签到者ID',"+
-// 		"`score` int NOT NULL COMMENT '签到分数',"+
-// 		"`type` varchar(128) NOT NULL COMMENT '类型（普签，补签，加签，福利）'")
-// }
-
-// func sqlCreateAppFeedback(tableName string) string {
-// 	return sqlDefaultContent(tableName, "`platform` varchar(16) NOT NULL COMMENT '平台（如iOS，Android）',"+
-// 		"`DUID` varchar(512) NOT NULL COMMENT '设备唯一标识',"+
-// 		"`appName` varchar(128) NOT NULL COMMENT 'app名称',"+
-// 		"`appVersion` varchar(128) NOT NULL COMMENT 'app版本号',"+
-// 		"`deviceModel` varchar(128) NOT NULL COMMENT '设备型号',"+
-// 		"`type` varchar(128) NOT NULL COMMENT '反馈类型（建议、功能异常、界面异常、合作、联系）',"+
-// 		"`title` varchar(128) COMMENT '标题',"+
-// 		"`content` text COMMENT '内容',"+
-// 		"`tel` varchar(128) COMMENT '座机',"+
-// 		"`phone` varchar(128) COMMENT '手机',"+
-// 		"`email` varchar(256) COMMENT '邮箱',"+
-// 		"`wechat` varchar(128) COMMENT '微信',"+
-// 		"`qq` varchar(128) COMMENT 'QQ'")
-// }
-
-// func sqlCreateAppFeedbackReply(tableName string) string {
-// 	return sqlDefaultContent(tableName, "`feedbackId` varchar(16) NOT NULL COMMENT '反馈infoId',"+
-// 		"`userName` varchar(512) NOT NULL COMMENT '回复者名称',"+
-// 		"`userId` varchar(128) NOT NULL COMMENT '回复者ID',"+
-// 		"`ownerReply` varchar(128) NOT NULL DEFAULT '0' COMMENT '提交者回复（0为回复者回复，1为提交者回复）',"+
-// 		"`content` text COMMENT '内容'")
-// }
 
 // 假设有一个安全函数，用于检查并清洗model参数，避免SQL注入风险
 func sanitizeModel(model string) (string, error) {

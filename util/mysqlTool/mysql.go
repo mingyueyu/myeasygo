@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -24,8 +25,8 @@ type MySql_t struct {
 }
 
 type Table_t struct {
-	Name    string // 表名称
-	Content string // 内容
+	Name    string  // 表名称
+	Content string  // 内容
 }
 
 type ERROR_T struct {
@@ -364,17 +365,22 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 			if col != nil {
 				var val interface{}
 				switch v := col.(type) {
+				case int64, float64, time.Time: // 根据实际数据库列类型添加更多的case
+					fmt.Println("类型: 数字")
+					val = v
 				case []byte:
+					fmt.Println("类型: []byte")
 					val = string(v)
 					var v1 interface{}
 					json.Unmarshal(v, &v1)
-					if v1 != nil{
-						val = v1
+					if v1 != nil {
+						if reflect.TypeOf(v1).Name() == ""{
+							val = v1
+						}
 					}
-				case int64, float64, time.Time: // 根据实际数据库列类型添加更多的case
-					val = v
+
 				default:
-					// 处理其他类型或抛出错误
+					fmt.Println("类型: 其他")
 					val = fmt.Sprintf("%v", v)
 				}
 				record[columns[i]] = val
@@ -391,6 +397,60 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 		return nil, 0, tcode, err
 	}
 	return result, count, 0, nil
+}
+
+// 数据库字段类型
+func typeNameFromTable(dbName, table string) []gin.H {
+	db, _, err := dbFromName(dbName)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return nil
+	}
+	// 查询数据库元数据获取表字段类型
+	query := `
+        SELECT COLUMN_NAME, DATA_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?;
+    `
+	rows, err := db.Query(query, dbName, table)
+	if err != nil {
+		fmt.Println("Error querying database:", err)
+		return nil
+	}
+	defer rows.Close()
+	target := []gin.H{}
+	for rows.Next() {
+		var columnName, dataType string
+		if err := rows.Scan(&columnName, &dataType); err != nil {
+			fmt.Println("Error scanning row:", err)
+		}
+		fmt.Printf("Column: %s, Type: %s\n", columnName, dataType)
+		if dataType == "int" || dataType == "bigint" || dataType == "tinyint" {
+			target = append(target, gin.H{
+				columnName: "int64",
+			})
+		} else if dataType == "float" || dataType == "double" {
+			target = append(target, gin.H{
+				columnName: "float64",
+			})
+		} else if dataType == "json" {
+			target = append(target, gin.H{
+				columnName: "json",
+			})
+		} else {
+			target = append(target, gin.H{
+				columnName: "string",
+			})
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		fmt.Println("Error iterating over rows:", err)
+		return nil
+	}
+	return target
 }
 
 func DetailMysql(dbName string, table string, where string) (gin.H, int, error) {
