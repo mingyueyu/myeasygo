@@ -112,6 +112,12 @@ func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withM
 		dealwithMysql()
 		num, tcode, err = mysqlTool.AddMysql(dbName, table, keyStr, valueStr)
 	}
+	if tcode == 1062 { // 有重复字段
+		// 失败换infoId再试一次
+		content["infoId"] = mysqlTool.GetTimeLongName()
+		keyStr, valueStr = sqlKeyValuesFromMap(content)
+		num, tcode, err = mysqlTool.AddMysql(dbName, table, keyStr, valueStr)
+	}
 	if err != nil {
 		if TestType {
 			panic(err)

@@ -15,15 +15,14 @@ package myeasygo
 // }
 
 // func main() {
-
 // 	defer func() {
-//         if r := recover(); r != nil {
-//             fmt.Println("============ 从 panic 恢复:", r)
-//             // 可选：在此处处理 panic 情况
-//         }
-//     }()
+// 		if r := recover(); r != nil {
+// 			fmt.Println("============ 从 panic 恢复:", r)
+// 			// 可选：在此处处理 panic 情况
+// 		}
+// 	}()
 // 	// gin.SetMode(gin.ReleaseMode)
-	
+
 // 	r := gin.Default()
 // 	// 跨域设置
 // 	r.Use(CORS(Options{Origin: "*"}))
@@ -40,8 +39,6 @@ package myeasygo
 
 // 	r.Run(":12345")
 // }
-
-
 
 // func CORS(options Options) gin.HandlerFunc {
 // 	return func(c *gin.Context) {

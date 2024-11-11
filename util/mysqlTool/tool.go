@@ -2,7 +2,6 @@ package mysqlTool
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 )
@@ -10,7 +9,8 @@ import (
 
 var mutex = &sync.Mutex{}
 var key = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
-var lastTimeLongName = ""
+
+
 
 // 10进制转62进制
 func ToMoreShort(ten int) string {
@@ -61,13 +61,10 @@ func GetTimeLongName() string {
     hour := ToMoreShort(t.Hour())
     minute := ToMoreShort(t.Minute())
     second := ToMoreShort(t.Second())
-    nsecond := ToMoreShort(t.Nanosecond()/1000000)
-    if len(nsecond) < 2 {
-		nsecond = fmt.Sprintf("%02s", nsecond)
+    nsecond := ToMoreShort(t.Nanosecond()/1000)
+    if len(nsecond) < 4 {
+		nsecond = fmt.Sprintf("%04s", nsecond)
 	}
     target := fmt.Sprintf("%s%s%s%s%s%s%s", year, month, day, hour, minute, second, nsecond)
-    if strings.Compare(target, lastTimeLongName) == 0{
-        return GetTimeLongName()
-    }
     return target
 }
