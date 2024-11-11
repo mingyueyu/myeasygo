@@ -43,9 +43,13 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 			if wihtIp {
 				if param["content"] != nil {
 					param["content"].(gin.H)["IP"] = c.ClientIP()
+					param["content"].(gin.H)["userAgent"] = c.Request.UserAgent()
 				}
 			} else {
-				delete(param, "IP")
+				if param["content"] != nil {
+					delete(param["content"].(gin.H), "IP")
+					delete(param["content"].(gin.H), "userAgent")
+				}
 			}
 			re, tcode, err := MysqlAdd(param, dbName, tableName, withYear, withMouth)
 			if err != nil {
@@ -114,8 +118,9 @@ func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withM
 		}
 		return nil, tcode, err
 	}
-	// IP 不返回
+	// IP, userAgent 不返回
 	delete(content, "IP")
+	delete(content, "userAgent")
 	content["ID"] = num
 	return content, 0, nil
 }

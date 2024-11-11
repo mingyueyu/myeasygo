@@ -64,5 +64,5 @@ func sqlDefaultContent(name string, field string) string {
 		"`modifyTime` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改日期',"+
 		"PRIMARY KEY (`ID`),"+
 		"UNIQUE KEY `infoId` (`infoId`)"+
-		") ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8;", name, field)
+		") ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8 COLLATE = utf8_bin;", name, field)
 }

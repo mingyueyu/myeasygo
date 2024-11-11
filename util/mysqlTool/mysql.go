@@ -366,10 +366,10 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 				var val interface{}
 				switch v := col.(type) {
 				case int64, float64, time.Time: // 根据实际数据库列类型添加更多的case
-					fmt.Println("类型: 数字")
+					// fmt.Println("类型: 数字")
 					val = v
 				case []byte:
-					fmt.Println("类型: []byte")
+					// fmt.Println("类型: []byte")
 					val = string(v)
 					var v1 interface{}
 					json.Unmarshal(v, &v1)
@@ -380,7 +380,7 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 					}
 
 				default:
-					fmt.Println("类型: 其他")
+					// fmt.Println("类型: 其他")
 					val = fmt.Sprintf("%v", v)
 				}
 				record[columns[i]] = val
