@@ -142,9 +142,9 @@ func whereString(param gin.H, searchTargets []string) string {
 	return strings.Join(whereStrings, " AND ")
 }
 
-func sqlKeyValuesFromMap(param gin.H) (string, string) {
+func sqlKeyValuesFromMap(param gin.H) ([]string, []string) {
 	keys, values := keysValuesFromParam(param)
-	return strings.Join(keys, ","), strings.Join(values, ",")
+	return keys, values
 }
 
 func sqlKeyValues(content gin.H, spliceStrig string) string {
@@ -232,9 +232,9 @@ func keysValuesFromParam(scene gin.H) ([]string, []string) {
 		value := ""
 		typeName := reflect.TypeOf(v).Name()
 		if strings.Compare(typeName, "string") == 0 {
-			value = fmt.Sprintf("'%s'", v)
+			value = fmt.Sprintf("%s", v)
 		} else if strings.Compare(typeName, "H") == 0 || strings.Compare(typeName, "") == 0 {
-			value = fmt.Sprintf("'%s'", system.JsonString(v))
+			value = system.JsonString(v)
 		} else {
 			value = fmt.Sprintf("%v", v)
 		}

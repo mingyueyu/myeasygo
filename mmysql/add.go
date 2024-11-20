@@ -106,17 +106,17 @@ func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withM
 			}
 		}
 	}
-	keyStr, valueStr := sqlKeyValuesFromMap(content)
-	num, tcode, err := mysqlTool.AddMysql(dbName, table, keyStr, valueStr)
+	keys, values := sqlKeyValuesFromMap(content)
+	num, tcode, err := mysqlTool.AddMysql(dbName, table, keys, values)
 	if tcode == 10010 {
 		dealwithMysql()
-		num, tcode, err = mysqlTool.AddMysql(dbName, table, keyStr, valueStr)
+		num, tcode, err = mysqlTool.AddMysql(dbName, table, keys, values)
 	}
 	if tcode == 1062 { // 有重复字段
 		// 失败换infoId再试一次
 		content["infoId"] = mysqlTool.GetTimeLongName()
-		keyStr, valueStr = sqlKeyValuesFromMap(content)
-		num, tcode, err = mysqlTool.AddMysql(dbName, table, keyStr, valueStr)
+		keys, values = sqlKeyValuesFromMap(content)
+		num, tcode, err = mysqlTool.AddMysql(dbName, table, keys, values)
 	}
 	if err != nil {
 		if TestType {

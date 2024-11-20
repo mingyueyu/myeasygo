@@ -25,8 +25,8 @@ type MySql_t struct {
 }
 
 type Table_t struct {
-	Name    string  // 表名称
-	Content string  // 内容
+	Name    string // 表名称
+	Content string // 内容
 }
 
 type ERROR_T struct {
@@ -109,7 +109,7 @@ func targetSqlStringWithNoDbName(name string) string {
 }
 
 // 增
-func AddMysql(dbName string, tableName string, keys string, values string) (int64, int, error) {
+func AddMysql(dbName string, tableName string, keys []string, values []string) (int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -118,16 +118,20 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 		return -1, tcode, err
 	}
 	defer db.Close()
-	dbString := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", tableName, keys, values)
-	// fmt.Printf("数据库新增：%s", dbString)
+	wenValue := []string{}
+	for i := 0; i < len(keys); i++ {
+		wenValue = append(wenValue, "?")
+	}
+	dbString := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", tableName, strings.Join(keys, ","), strings.Join(wenValue, ","))
+	fmt.Printf("数据库新增：%s - %s",keys, dbString)
 	//	// 2. exec
-	ret, err := db.Exec(dbString) //exec执行（Python中的exec就是执行字符串代码的，返回值是None，eval有返回值）
+	stmt, err := db.Prepare(dbString) //exec执行（Python中的exec就是执行字符串代码的，返回值是None，eval有返回值）
 	if err != nil {
 		errcode := errorCode(err)
 		if errcode != -1 && errcode == 1146 {
 			isOK, tcode, err := createTable(dbName, tableName)
 			if isOK {
-				ret, err = db.Exec(dbString)
+				stmt, err = db.Prepare(dbString)
 				if err != nil {
 					if TestType {
 						panic(err)
@@ -140,7 +144,7 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 		} else if errcode == 1049 {
 			isOK, tcode, err := createDb(dbName, tableName)
 			if isOK {
-				ret, err = db.Exec(dbString)
+				stmt, err = db.Prepare(dbString)
 				if err != nil {
 					if TestType {
 						panic(err)
@@ -154,6 +158,15 @@ func AddMysql(dbName string, tableName string, keys string, values string) (int6
 			// fmt.Printf("get insert id fail,err:%v\n", err)
 			return -1, errorCode(err), err
 		}
+	}
+	defer stmt.Close()
+	args := make([]any, len(values))
+	for i, v := range values {
+		args[i] = v
+	}
+	ret, err := stmt.Exec(args...)
+	if err != nil {
+		return -1, errorCode(err), err
 	}
 	// 增
 	// 如果是插入数据的操作，能够拿到插入数据的id
@@ -374,7 +387,7 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 					var v1 interface{}
 					json.Unmarshal(v, &v1)
 					if v1 != nil {
-						if reflect.TypeOf(v1).Name() == ""{
+						if reflect.TypeOf(v1).Name() == "" {
 							val = v1
 						}
 					}
