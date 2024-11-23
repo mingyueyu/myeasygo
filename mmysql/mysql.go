@@ -85,12 +85,14 @@ func paramFromGet(c *gin.Context) gin.H {
 	return re
 }
 
-func whereString(param gin.H, searchTargets []string) string {
+func whereString(param gin.H, searchTargets []string) (string, []any) {
 	whereStrings := []string{}
+	whereValuelist := []any{}
 	and := paramGinH(param["and"])
 	if and != nil {
-		if whereString := sqlKeyValues(and, "AND"); len(whereString) > 0 {
+		if whereString, whereValues := sqlKeyValues(and, "AND"); len(whereString) > 0 {
 			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
+			whereValuelist = append(whereValuelist, whereValues...)
 		}
 	}
 	if param["or"] != nil {
@@ -98,8 +100,9 @@ func whereString(param gin.H, searchTargets []string) string {
 		if strings.Compare(orType, "gin.H") == 0 {
 			or := paramGinH(param["or"])
 			if or != nil {
-				if whereString := sqlKeyValues(or, "OR"); len(whereString) > 0 {
+				if whereString, whereValues := sqlKeyValues(or, "OR"); len(whereString) > 0 {
 					whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
+					whereValuelist = append(whereValuelist, whereValues...)
 				}
 			}
 		} else if strings.Compare(orType, "[]gin.H") == 0 {
@@ -107,8 +110,9 @@ func whereString(param gin.H, searchTargets []string) string {
 			targetList := []string{}
 			for i := 0; i < len(list); i++ {
 				or := list[i]
-				if whereString := sqlKeyValues(or, "AND"); len(whereString) > 0 {
+				if whereString, whereValues := sqlKeyValues(or, "AND"); len(whereString) > 0 {
 					targetList = append(targetList, whereString)
+					whereValuelist = append(whereValuelist, whereValues...)
 				}
 			}
 			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", strings.Join(targetList, " OR ")))
@@ -139,7 +143,7 @@ func whereString(param gin.H, searchTargets []string) string {
 			whereStrings = append(whereStrings, fmt.Sprintf("(%s)", whereString))
 		}
 	}
-	return strings.Join(whereStrings, " AND ")
+	return strings.Join(whereStrings, " AND "), whereValuelist
 }
 
 func sqlKeyValuesFromMap(param gin.H) ([]string, []string) {
@@ -147,9 +151,10 @@ func sqlKeyValuesFromMap(param gin.H) ([]string, []string) {
 	return keys, values
 }
 
-func sqlKeyValues(content gin.H, spliceStrig string) string {
+func sqlKeyValues(content gin.H, spliceStrig string) (string, []any) {
 	keys, values := keysValuesFromParam(content)
 	wheres := []string{}
+	whereValues := []any{}
 	for i := 0; i < len(keys); i++ {
 		k := keys[i]
 		value := values[i]
@@ -161,23 +166,26 @@ func sqlKeyValues(content gin.H, spliceStrig string) string {
 			if strings.LastIndex(k, "-") == len(k)-1 {
 				k = k[:len(k)-1]
 				value = k + "-" + value
-				wheres = append(wheres, k+"="+value)
+				wheres = append(wheres, k+"=?")
+				whereValues = append(whereValues, value)
 			} else if strings.LastIndex(k, "+") == len(k)-1 {
 				k = k[:len(k)-1]
 				value = k + "+" + value
-				wheres = append(wheres, k+"="+value)
+				wheres = append(wheres, k+"=?")
+				whereValues = append(whereValues, value)
 			} else if strings.LastIndex(k, ">=") == len(k)-2 || strings.LastIndex(k, "<=") == len(k)-2 || strings.LastIndex(k, ">") == len(k)-1 || strings.LastIndex(k, "<") == len(k)-1  {
-				wheres = append(wheres, k+value)
+				wheres = append(wheres, k+"?")
+				whereValues = append(whereValues, value)
 			} else {
-				wheres = append(wheres, k+"="+value)
+				wheres = append(wheres, k+"=?")
+				whereValues = append(whereValues, value)
 			}
 		}
 	}
 	if len(wheres) > 0 {
-		
-		return strings.Join(wheres, " "+spliceStrig+" ")
+		return strings.Join(wheres, " "+spliceStrig+" "), whereValues
 	} else {
-		return ""
+		return "", whereValues
 	}
 }
 

@@ -77,15 +77,13 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 }
 
 func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withMouth bool) (gin.H, int, error) {
-	delete(param, "createTime")
-	delete(param, "modifyTime")
 	if param["content"] == nil {
 		return nil, 10004, errors.New("缺少参数 content")
 	}
 	content := param["content"].(gin.H)
-	if content["infoId"] == nil {
-		content["infoId"] = mysqlTool.GetTimeLongName()
-	}
+	delete(content, "createTime")
+	delete(content, "modifyTime")
+	content["infoId"] = mysqlTool.GetTimeLongName()
 	table := tableName
 	if param["table"] != nil {
 		table = fmt.Sprintf("%s_%v", table, param["table"])
@@ -122,6 +120,7 @@ func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withM
 		if TestType {
 			panic(err)
 		}
+		
 		return nil, tcode, err
 	}
 	// IP, userAgent 不返回

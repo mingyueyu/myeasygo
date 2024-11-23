@@ -68,9 +68,9 @@ func dbFromName(dbName string) (*sql.DB, int, error) {
 	}
 	sqlString, tcode, err := targetSqlString(dbName)
 	if err != nil {
-		if TestType {
-			panic(err)
-		}
+		// if TestType {
+		// 	panic(err)
+		// }
 		return nil, tcode, err
 	}
 	// fmt.Println(sqlString)
@@ -110,197 +110,43 @@ func targetSqlStringWithNoDbName(name string) string {
 
 // 增
 func AddMysql(dbName string, tableName string, keys []string, values []string) (int64, int, error) {
-	db, tcode, err := dbFromName(dbName)
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return -1, tcode, err
-	}
-	defer db.Close()
 	wenValue := []string{}
 	for i := 0; i < len(keys); i++ {
 		wenValue = append(wenValue, "?")
 	}
 	dbString := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", tableName, strings.Join(keys, ","), strings.Join(wenValue, ","))
-	fmt.Printf("数据库新增：%s - %s",keys, dbString)
-	//	// 2. exec
-	stmt, err := db.Prepare(dbString) //exec执行（Python中的exec就是执行字符串代码的，返回值是None，eval有返回值）
-	if err != nil {
-		errcode := errorCode(err)
-		if errcode != -1 && errcode == 1146 {
-			isOK, tcode, err := createTable(dbName, tableName)
-			if isOK {
-				stmt, err = db.Prepare(dbString)
-				if err != nil {
-					if TestType {
-						panic(err)
-					}
-					return -1, errorCode(err), err
-				}
-			} else {
-				return -1, tcode, err
-			}
-		} else if errcode == 1049 {
-			isOK, tcode, err := createDb(dbName, tableName)
-			if isOK {
-				stmt, err = db.Prepare(dbString)
-				if err != nil {
-					if TestType {
-						panic(err)
-					}
-					return -1, errorCode(err), err
-				}
-			} else {
-				return -1, tcode, err
-			}
-		} else {
-			// fmt.Printf("get insert id fail,err:%v\n", err)
-			return -1, errorCode(err), err
-		}
-	}
-	defer stmt.Close()
 	args := make([]any, len(values))
 	for i, v := range values {
 		args[i] = v
 	}
-	ret, err := stmt.Exec(args...)
-	if err != nil {
-		return -1, errorCode(err), err
-	}
-	// 增
-	// 如果是插入数据的操作，能够拿到插入数据的id
-	id, err := ret.LastInsertId()
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		// fmt.Printf("get insert id fail,err:%v\n", err)
-		return -1, errorCode(err), err
-	}
-	// fmt.Println("insert id:", id)
-	return id, 0, nil
+	return execute(dbName, tableName, dbString, args)
 }
 
 // 删
-func DelectMysql(dbName string, tableName string, where string) (int64, int, error) {
-	db, tcode, err := dbFromName(dbName)
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return 0, tcode, err
-	}
+func DelectMysql(dbName string, tableName string, where string, whereValues []any) (int64, int, error) {
 	if len(where) == 0 {
 		return 0, 10003, errors.New("where 不能为空")
 	}
 	dbString := "DELETE FROM " + tableName + " WHERE " + where
-	result, err := db.Exec(dbString)
-	if err != nil {
-		errcode := errorCode(err)
-		if errcode != -1 && errcode == 1146 {
-			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
-			sqlStr, err := sqlCeateFromName(dbName, tableName)
-			if err != nil {
-				// 没有数据库
-				if TestType {
-					panic(err)
-				}
-				return 0, 10010, err
-			}
-			_, err = db.Query(sqlStr)
-			if err != nil {
-				if TestType {
-					panic(err)
-				}
-				return 0, errorCode(err), err
-			} else {
-				// fmt.Printf("数据表%s创建成功", tableName)
-				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
-				result, err = db.Exec(dbString)
-				if err != nil {
-					if TestType {
-						panic(err)
-					}
-					return 0, errorCode(err), err
-				}
-			}
-		} else {
-			return 0, errorCode(err), err
-		}
-	}
-	rowNum, err := result.RowsAffected()
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return 0, errorCode(err), err
-	} else if rowNum == 0 {
-		return 0, 10011, errors.New("数据不存在，不能删除")
-	}
-	return rowNum, 0, nil
+	return execute(dbName, tableName, dbString, whereValues)
 }
 
 // 改
-func UpdateMysql(dbName string, tableName string, content string, where string) (int64, int, error) {
-	db, tcode, err := dbFromName(dbName)
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return 0, tcode, err
-	}
+func UpdateMysql(dbName string, tableName string, content string, contentValues []any, where string, whereValues []any) (int64, int, error) {
 	if len(where) == 0 {
 		return 0, 10003, errors.New("缺少where条件")
 	}
 	dbString := "UPDATE " + tableName + " SET " + content + " WHERE " + where
-	result, err := db.Exec(dbString)
-	if err != nil {
-		errcode := errorCode(err)
-		if errcode != -1 && errcode == 1146 {
-			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
-			sqlStr, err := sqlCeateFromName(dbName, tableName)
-			if err != nil {
-				// 没有数据库
-				if TestType {
-					panic(err)
-				}
-				return 0, 10010, err
-			}
-			_, err = db.Query(sqlStr)
-			if err != nil {
-				if TestType {
-					panic(err)
-				}
-				return 0, errorCode(err), err
-			} else {
-				// fmt.Printf("数据表%s创建成功", tableName)
-				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
-				result, err = db.Exec(dbString)
-				if err != nil {
-					if TestType {
-						panic(err)
-					}
-					return 0, errorCode(err), err
-				}
-			}
-		} else {
-			return 0, errorCode(err), err
-		}
-	}
-	rowsCount, _ := result.RowsAffected()
-	// fmt.Printf("update success, affected rows:[%d]\n", rowsCount)
-
-	return rowsCount, 0, nil
+	return execute(dbName, tableName, dbString, append(contentValues, whereValues...))
 }
 
 // 查
-func ListMysql(dbName string, tableName string, where string, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int, error) {
+func ListMysql(dbName string, tableName string, where string, whereValues []any, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
-		if TestType {
-			panic(err)
-		}
+		// if TestType {
+		// 	panic(err)
+		// }
 		return nil, 0, tcode, err
 	}
 	// 处理参数
@@ -319,9 +165,9 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 		pageSize = 20
 	}
 	dbString := fmt.Sprintf("SELECT * FROM %s %s %s LIMIT %d,%d;", tableName, whereString, orderByString, pageNumber*pageSize, pageSize)
-	// fmt.Println("List-dbString", dbString)
-	rows, err := db.Query(dbString)
+	rows, err := db.Query(dbString, whereValues...)
 	if err != nil {
+		fmt.Println("sql err:", err.Error())
 		errcode := errorCode(err)
 		if errcode != -1 && errcode == 1146 {
 			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
@@ -402,7 +248,7 @@ func ListMysql(dbName string, tableName string, where string, sort string, pageN
 		result = append(result, record)
 		//isContentTargetOrderId = true
 	}
-	count, tcode, err := CheckCount(dbName, tableName, where)
+	count, tcode, err := CheckCount(dbName, tableName, where, whereValues)
 	if err != nil {
 		if TestType {
 			panic(err)
@@ -466,8 +312,8 @@ func typeNameFromTable(dbName, table string) []gin.H {
 	return target
 }
 
-func DetailMysql(dbName string, table string, where string) (gin.H, int, error) {
-	res, count, tcode, err := ListMysql(dbName, table, where, "", 0, 1)
+func DetailMysql(dbName string, table string, where string, whereValues []any) (gin.H, int, error) {
+	res, count, tcode, err := ListMysql(dbName, table, where, whereValues, "", 0, 1)
 	if err != nil {
 		if TestType {
 			panic(err)
@@ -481,7 +327,7 @@ func DetailMysql(dbName string, table string, where string) (gin.H, int, error) 
 	}
 }
 
-func DifMysql(dbName string, tableName string, field string, where string) ([]gin.H, int, error) {
+func DifMysql(dbName string, tableName string, field string, where string, whereValues []any) ([]gin.H, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -496,7 +342,7 @@ func DifMysql(dbName string, tableName string, field string, where string) ([]gi
 		whereString = fmt.Sprintf("WHERE %s", where)
 	}
 	dbString := fmt.Sprintf("SELECT DISTINCT %s, COUNT(*) FROM %s %s GROUP BY %s %s;", field, tableName, whereString, field, orderByString)
-	rows, err := db.Query(dbString)
+	rows, err := db.Query(dbString, whereValues...)
 	if err != nil {
 		errcode := errorCode(err)
 		if errcode != -1 && errcode == 1146 {
@@ -575,7 +421,7 @@ func DifMysql(dbName string, tableName string, field string, where string) ([]gi
 }
 
 // 检查数量
-func CheckCount(dbName string, table string, where string) (int64, int, error) {
+func CheckCount(dbName string, table string, where string, whereValues []any) (int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		if TestType {
@@ -589,7 +435,7 @@ func CheckCount(dbName string, table string, where string) (int64, int, error) {
 	}
 	dbString := fmt.Sprintf("SELECT COUNT(*) FROM %s %s", table, whereString)
 	// fmt.Printf("CheckCount-dbString:%s", dbString)
-	rows, err := db.Query(dbString)
+	rows, err := db.Query(dbString, whereValues...)
 	if err != nil {
 		if TestType {
 			panic(err)
@@ -673,4 +519,79 @@ func errorCodeMsg(e error) (int, string) {
 func errorCode(e error) int {
 	code, _ := errorCodeMsg(e)
 	return code
+}
+
+
+// 执行MySQL
+func execute(dbName string, tableName string, dbString string, params []any) (int64, int, error) {
+	db, tcode, err := dbFromName(dbName)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return 0, tcode, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(dbString)
+	if err != nil {
+		errcode := errorCode(err)
+		if errcode == 1146 {
+			isOK, tcode, err := createTable(dbName, tableName)
+			if isOK {
+				stmt, err = db.Prepare(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return 0, errorCode(err), err
+				}
+			} else {
+				return 0, tcode, err
+			}
+		} else if errcode == 1049 {
+			isOK, tcode, err := createDb(dbName, tableName)
+			if isOK {
+				stmt, err = db.Prepare(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return 0, errorCode(err), err
+				}
+			} else {
+				return 0, tcode, err
+			}
+		} else {
+			return 0, errorCode(err), err
+		}
+	}
+	defer stmt.Close()
+	result, err := stmt.Exec(params...)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return 0, errorCode(err), err
+	}
+	if strings.HasPrefix(dbString, "UPDATE"){
+		count, err :=result.RowsAffected()
+		if err != nil {
+			return 0, errorCode(err), err
+		}else {
+			if count == 0 {
+				return 0, 10023, errors.New("没有需要更新的数据")
+			}
+			return count, 0, nil
+		}
+	}else {
+		lid, err := result.LastInsertId()
+		if err != nil {
+			if TestType {
+				panic(err)
+			}
+			return 0, errorCode(err), err
+		}else {
+			return lid, 0, nil
+		}
+	}
 }

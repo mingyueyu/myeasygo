@@ -112,6 +112,7 @@ func stringFromCode(code int) string{
     case 10020: return "数据不存在"
     case 10021: return "数据已存在"
     case 10022: return "上传失败"
+    case 10023: return "没有需要更新的数据"
 
 
     default: return fmt.Sprintf("未知错误（%d）", code)

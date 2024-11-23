@@ -95,10 +95,12 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 
 func MysqlDetail(param gin.H, dbName string, tableName string) (gin.H, int, error) {
 	table := tableNameFromeParam(param, tableName)
-	re, tcode, err := mysqlTool.DetailMysql(dbName, table, whereString(param, nil))
+	where, whereValues := whereString(param, nil)
+	re, tcode, err := mysqlTool.DetailMysql(dbName, table, where, whereValues)
 	if tcode == 10010 {
 		dealwithMysql()
-		return mysqlTool.DetailMysql(dbName, table, whereString(param, nil))
+		where, whereValues := whereString(param, nil)
+		return mysqlTool.DetailMysql(dbName, table, where, whereValues)
 	}
 	return re, tcode, err
 }

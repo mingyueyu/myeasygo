@@ -124,10 +124,12 @@ func MysqlList(param gin.H, dbName string, tableName string, searchTargets []str
 	}
 	page := paramInt(param["page"], 1) - 1
 	limit := paramInt(param["limit"], 20)
-	list, count, tcode, err := mysqlTool.ListMysql(dbName, table, whereString(param, searchTargets), sortString, page, limit)
+	where, whereValues := whereString(param, searchTargets)
+	list, count, tcode, err := mysqlTool.ListMysql(dbName, table, where, whereValues, sortString, page, limit)
 	if tcode == 10010 {
 		dealwithMysql()
-		return mysqlTool.ListMysql(dbName, table, whereString(param, searchTargets), sortString, page, limit)
+		where, whereValues := whereString(param, searchTargets)
+		return mysqlTool.ListMysql(dbName, table, where, whereValues, sortString, page, limit)
 	}
 	return list, count, tcode, err
 }

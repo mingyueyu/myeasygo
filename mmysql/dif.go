@@ -64,10 +64,12 @@ func MysqlDif(param gin.H, dbName string, tableName string) ([]gin.H, int, error
 	if param["field"] == nil || len(param["field"].(string)) == 0 {
 		return nil, 10004, errors.New("field参数不能为空")
 	}
-	list, tcode, err := mysqlTool.DifMysql(dbName, table, param["field"].(string), whereString(param, nil))
+	where, whereValues := whereString(param, nil)
+	list, tcode, err := mysqlTool.DifMysql(dbName, table, param["field"].(string), where, whereValues)
 	if tcode == 10010 {
 		dealwithMysql()
-		list, tcode, err = mysqlTool.DifMysql(dbName, table, param["field"].(string), whereString(param, nil))
+		where, whereValues := whereString(param, nil)
+		list, tcode, err = mysqlTool.DifMysql(dbName, table, param["field"].(string), where, whereValues)
 	}
 	return list, tcode, err
 }

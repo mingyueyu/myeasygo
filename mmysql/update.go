@@ -8,10 +8,14 @@ import (
 )
 
 func Update(r *gin.Engine, relativePath string, dbName string, tableName string) {
-	UpdatePlus(r, relativePath, dbName, tableName, nil, nil)
+	UpdatePlus(r, relativePath, dbName, tableName, false, nil, nil)
 }
 
-func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName string, funcParam func(c *gin.Context, param gin.H) (gin.H, int, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int, error)) {
+func UpdatePro(r *gin.Engine, relativePath string, dbName string, tableName string, wihtIp bool) {
+	UpdatePlus(r, relativePath, dbName, tableName, wihtIp, nil, nil)
+}
+
+func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName string, wihtIp bool, funcParam func(c *gin.Context, param gin.H) (gin.H, int, error), funcResult func(c *gin.Context, result gin.H) (gin.H, int, error)) {
 	r.POST(relativePath, func(c *gin.Context) {
 		param, err := ParamToGinH(c)
 		if err != nil {
@@ -32,6 +36,17 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 				return
 			}
 			param = tparam
+		}
+		if wihtIp {
+			if param["content"] != nil {
+				param["content"].(gin.H)["IP"] = c.ClientIP()
+				param["content"].(gin.H)["userAgent"] = c.Request.UserAgent()
+			}
+		} else {
+			if param["content"] != nil {
+				delete(param["content"].(gin.H), "IP")
+				delete(param["content"].(gin.H), "userAgent")
+			}
 		}
 		re, tcode, err := MysqlUpdate(param, dbName, tableName)
 		if err != nil {
@@ -62,10 +77,14 @@ func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int, erro
 	delete(param, "createTime")
 	delete(param, "modifyTime")
 	table := tableNameFromeParam(param, tableName)
-	count, tcode, err := mysqlTool.UpdateMysql(dbName, table, sqlKeyValues(param["content"].(gin.H), ","), whereString(param, nil))
+	content, contentValues := sqlKeyValues(param["content"].(gin.H), ",")
+	where, whereValues := whereString(param, nil)
+	count, tcode, err := mysqlTool.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
 	if tcode == 10010 {
 		dealwithMysql()
-		count, tcode, err = mysqlTool.UpdateMysql(dbName, table, sqlKeyValues(param["content"].(gin.H), ","), whereString(param, nil))
+		content, contentValues = sqlKeyValues(param["content"].(gin.H), ",")
+		where, whereValues := whereString(param, nil)
+		count, tcode, err = mysqlTool.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
 	}
 	if err != nil {
 		if TestType {
