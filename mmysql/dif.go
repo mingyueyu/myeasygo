@@ -66,10 +66,10 @@ func MysqlDif(param gin.H, dbName string, tableName string) ([]gin.H, int, error
 	}
 	where, whereValues := whereString(param, nil)
 	list, tcode, err := mysqlTool.DifMysql(dbName, table, param["field"].(string), where, whereValues)
-	if tcode == 10010 {
-		dealwithMysql()
-		where, whereValues := whereString(param, nil)
-		list, tcode, err = mysqlTool.DifMysql(dbName, table, param["field"].(string), where, whereValues)
-	}
+	// if tcode == 10010 {
+	// 	dealwithMysql()
+	// 	where, whereValues := whereString(param, nil)
+	// 	list, tcode, err = mysqlTool.DifMysql(dbName, table, param["field"].(string), where, whereValues)
+	// }
 	return list, tcode, err
 }

@@ -80,12 +80,12 @@ func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int, erro
 	content, contentValues := sqlKeyValues(param["content"].(gin.H), ",")
 	where, whereValues := whereString(param, nil)
 	count, tcode, err := mysqlTool.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
-	if tcode == 10010 {
-		dealwithMysql()
-		content, contentValues = sqlKeyValues(param["content"].(gin.H), ",")
-		where, whereValues := whereString(param, nil)
-		count, tcode, err = mysqlTool.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
-	}
+	// if tcode == 10010 {
+	// 	dealwithMysql()
+	// 	content, contentValues = sqlKeyValues(param["content"].(gin.H), ",")
+	// 	where, whereValues := whereString(param, nil)
+	// 	count, tcode, err = mysqlTool.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
+	// }
 	if err != nil {
 		if TestType {
 			panic(err)

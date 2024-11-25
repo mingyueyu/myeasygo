@@ -1,7 +1,6 @@
 package mmysql
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -44,11 +43,17 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 				if param["content"] != nil {
 					param["content"].(gin.H)["IP"] = c.ClientIP()
 					param["content"].(gin.H)["userAgent"] = c.Request.UserAgent()
+				}else {
+					param["IP"] = c.ClientIP()
+					param["userAgent"] = c.Request.UserAgent()
 				}
 			} else {
 				if param["content"] != nil {
 					delete(param["content"].(gin.H), "IP")
 					delete(param["content"].(gin.H), "userAgent")
+				}else {
+					delete(param, "IP")
+					delete(param, "userAgent")
 				}
 			}
 			re, tcode, err := MysqlAdd(param, dbName, tableName, withYear, withMouth)
@@ -77,50 +82,51 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 }
 
 func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withMouth bool) (gin.H, int, error) {
-	if param["content"] == nil {
-		return nil, 10004, errors.New("缺少参数 content")
+	var content gin.H
+	var table = tableName
+	t := time.Now()
+	var year = fmt.Sprintf("%d", t.Year())
+	var month = fmt.Sprintf("%02d", t.Month())
+	if param["content"] != nil {
+		content = param["content"].(gin.H)
+		if param["year"] != nil {
+			year = fmt.Sprintf("%v", param["year"])
+		}
+		if param["mouth"] != nil {
+			month = fmt.Sprintf("%02v", param["mouth"])
+		}
+	}else {
+		content = param
+		if param["table"] != nil {
+			table = fmt.Sprintf("%s_%v", table, param["table"])
+		}
 	}
-	content := param["content"].(gin.H)
 	delete(content, "createTime")
 	delete(content, "modifyTime")
 	content["infoId"] = mysqlTool.GetTimeLongName()
-	table := tableName
-	if param["table"] != nil {
-		table = fmt.Sprintf("%s_%v", table, param["table"])
-	}
 	if withYear {
-		t := time.Now()
-		if param["year"] != nil {
-			table = fmt.Sprintf("%s_%v", table, param["year"])
-		} else {
-			table = fmt.Sprintf("%s_%d", tableName, t.Year())
-		}
+		table = fmt.Sprintf("%s_%v", table, year)
 		// 有年才有月
 		if withMouth {
-			if param["mouth"] != nil {
-				table = fmt.Sprintf("%s%02v", table, param["mouth"])
-			} else {
-				table = fmt.Sprintf("%s%02d", table, t.Month())
-			}
+			table = fmt.Sprintf("%s%02v", table, month)
 		}
 	}
 	keys, values := sqlKeyValuesFromMap(content)
 	num, tcode, err := mysqlTool.AddMysql(dbName, table, keys, values)
-	if tcode == 10010 {
-		dealwithMysql()
-		num, tcode, err = mysqlTool.AddMysql(dbName, table, keys, values)
-	}
-	if tcode == 1062 { // 有重复字段
-		// 失败换infoId再试一次
-		content["infoId"] = mysqlTool.GetTimeLongName()
-		keys, values = sqlKeyValuesFromMap(content)
-		num, tcode, err = mysqlTool.AddMysql(dbName, table, keys, values)
-	}
+	// if tcode == 10010 {
+	// 	dealwithMysql()
+	// 	num, tcode, err = mysqlTool.AddMysql(dbName, table, keys, values)
+	// }
+	// if tcode == 1062 { // 有重复字段
+	// 	// 失败换infoId再试一次
+	// 	content["infoId"] = mysqlTool.GetTimeLongName()
+	// 	keys, values = sqlKeyValuesFromMap(content)
+	// 	num, tcode, err = mysqlTool.AddMysql(dbName, table, keys, values)
+	// }
 	if err != nil {
 		if TestType {
 			panic(err)
 		}
-		
 		return nil, tcode, err
 	}
 	// IP, userAgent 不返回

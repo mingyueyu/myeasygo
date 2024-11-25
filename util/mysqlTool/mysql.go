@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mingyueyu/myeasygo/util/system"
 
 	"strings"
 
@@ -52,13 +53,22 @@ func dbFromName(dbName string) (*sql.DB, int, error) {
 			// 检查数据库连接是否可用。
 			err = target.Ping()
 			if err != nil {
-				if TestType {
-					panic(err)
-				}
+				// if TestType {
+				// 	panic(err)
+				// }
 				// 如果数据库连接不可用，打印错误信息并关闭连接。
 				// fmt.Println("数据库没连接:", err)
 				// fmt.Printf("\n数据库close前连接数OpenConnections：%v\nInUse:%v\n", target.Stats().OpenConnections, target.Stats().InUse)
 				target.Close()
+				// 如果数据库不存在, 创建数据库
+				if errorCode(err) == 1049 {
+					isOK, tcode, err := createDb(dbName, "")
+					if isOK {
+						return dbFromName(dbName)
+					} else {
+						return nil, tcode, err
+					}
+				}
 			} else {
 				// 如果数据库连接可用，直接返回连接对象。
 				return target, 0, nil
@@ -68,9 +78,9 @@ func dbFromName(dbName string) (*sql.DB, int, error) {
 	}
 	sqlString, tcode, err := targetSqlString(dbName)
 	if err != nil {
-		// if TestType {
-		// 	panic(err)
-		// }
+		if TestType {
+			panic(err)
+		}
 		return nil, tcode, err
 	}
 	// fmt.Println(sqlString)
@@ -141,7 +151,7 @@ func UpdateMysql(dbName string, tableName string, content string, contentValues 
 }
 
 // 查
-func ListMysql(dbName string, tableName string, where string, whereValues []any, sort string, pageNumber int64, pageSize int64) ([]gin.H, int64, int, error) {
+func ListMysql(dbName string, tableName string, where string, whereValues []any, sort string, sortValues []any, pageNumber int64, pageSize int64) ([]gin.H, int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
 	if err != nil {
 		// if TestType {
@@ -165,7 +175,12 @@ func ListMysql(dbName string, tableName string, where string, whereValues []any,
 		pageSize = 20
 	}
 	dbString := fmt.Sprintf("SELECT * FROM %s %s %s LIMIT %d,%d;", tableName, whereString, orderByString, pageNumber*pageSize, pageSize)
-	rows, err := db.Query(dbString, whereValues...)
+	argsList := whereValues
+	if sortValues != nil {
+		argsList = append(argsList, sortValues...)
+	}
+	fmt.Println("dbString:", dbString, " - whereValues:", system.JsonString(argsList))
+	rows, err := db.Query(dbString, argsList...)
 	if err != nil {
 		fmt.Println("sql err:", err.Error())
 		errcode := errorCode(err)
@@ -313,7 +328,7 @@ func typeNameFromTable(dbName, table string) []gin.H {
 }
 
 func DetailMysql(dbName string, table string, where string, whereValues []any) (gin.H, int, error) {
-	res, count, tcode, err := ListMysql(dbName, table, where, whereValues, "", 0, 1)
+	res, count, tcode, err := ListMysql(dbName, table, where, whereValues, "", nil, 0, 1)
 	if err != nil {
 		if TestType {
 			panic(err)
@@ -477,7 +492,11 @@ func createDb(dbName string, tableName string) (bool, int, error) {
 		return false, errorCode(err), err
 	} else {
 		fmt.Println("数据库", dbName, "创建成功")
-		return createTable(dbName, tableName)
+		if len(tableName) > 0{
+			return createTable(dbName, tableName)
+		}else {
+			return true, 0, nil
+		}
 	}
 }
 
@@ -491,6 +510,7 @@ func createTable(dbName string, tableName string) (bool, int, error) {
 		}
 		return false, 10010, err
 	}
+
 	_, err = db.Query(sqlStr)
 	if err != nil {
 		if TestType {
@@ -521,7 +541,6 @@ func errorCode(e error) int {
 	return code
 }
 
-
 // 执行MySQL
 func execute(dbName string, tableName string, dbString string, params []any) (int64, int, error) {
 	db, tcode, err := dbFromName(dbName)
@@ -531,7 +550,6 @@ func execute(dbName string, tableName string, dbString string, params []any) (in
 		}
 		return 0, tcode, err
 	}
-	defer db.Close()
 	stmt, err := db.Prepare(dbString)
 	if err != nil {
 		errcode := errorCode(err)
@@ -571,26 +589,27 @@ func execute(dbName string, tableName string, dbString string, params []any) (in
 		if TestType {
 			panic(err)
 		}
+		fmt.Println("执行失败", dbString)
 		return 0, errorCode(err), err
 	}
-	if strings.HasPrefix(dbString, "UPDATE"){
-		count, err :=result.RowsAffected()
+	if strings.HasPrefix(dbString, "UPDATE") {
+		count, err := result.RowsAffected()
 		if err != nil {
 			return 0, errorCode(err), err
-		}else {
+		} else {
 			if count == 0 {
 				return 0, 10023, errors.New("没有需要更新的数据")
 			}
 			return count, 0, nil
 		}
-	}else {
+	} else {
 		lid, err := result.LastInsertId()
 		if err != nil {
 			if TestType {
 				panic(err)
 			}
 			return 0, errorCode(err), err
-		}else {
+		} else {
 			return lid, 0, nil
 		}
 	}

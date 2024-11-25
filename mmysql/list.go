@@ -3,10 +3,12 @@ package mmysql
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mingyueyu/myeasygo/util/mysqlTool"
+	"github.com/mingyueyu/myeasygo/util/system"
 )
 
 func List(r *gin.Engine, relativePath string, dbName string, tableName string, searchTargets []string) {
@@ -106,15 +108,56 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 func MysqlList(param gin.H, dbName string, tableName string, searchTargets []string) ([]gin.H, int64, int, error) {
 	// 处理列表数据
 	table := tableNameFromeParam(param, tableName)
-	sortString := fmt.Sprintf("%s %s", "createTime", "DESC")
-	if param["sort"] != nil {
-		array := param["sort"].([]gin.H)
+	sortString, sortValues := getSort(param["sort"])
+	page := paramInt(param["page"], 1) - 1
+	limit := paramInt(param["limit"], 20)
+	where, whereValues := whereString(param, searchTargets)
+	list, count, tcode, err := mysqlTool.ListMysql(dbName, table, where, whereValues, sortString, sortValues, page, limit)
+	// if tcode == 10010 {
+	// 	dealwithMysql()
+	// 	where, whereValues := whereString(param, searchTargets)
+	// 	return mysqlTool.ListMysql(dbName, table, where, whereValues, sortString, sortValues, page, limit)
+	// }
+	return list, count, tcode, err
+}
+
+// 获取排序数据
+func getSort(sort any) (string, []any) {
+	var sortString string
+	var sortValues []any
+	if reflect.TypeOf(sort) == reflect.TypeOf(gin.H{}) {
+		sort := sort.(gin.H)
+		if sort["field"] != nil && len(sort["field"].(string)) > 0 && sort["type"] != nil && len(sort["type"].(string)) > 0 {
+			sortType := strings.ToUpper(sort["type"].(string))
+			sortField := sort["field"].(string)
+			if strings.Compare(sortType, "ASC") != 0 && strings.Compare(sortType, "DESC") != 0 {
+				return sortString, sortValues
+			}
+			if strings.Contains(sortField, ";") || strings.Contains(sortField, ",") {
+				return sortString, sortValues
+			}
+			// sortString = "? " + sortType
+			// sortValues = append(sortValues, sortField)
+			sortString = sortField + " " + sortType
+		}
+	} else if reflect.TypeOf(sort) == reflect.TypeOf([]gin.H{}) {
+		array := sort.([]gin.H)
 		sorts := []string{}
 		for i := 0; i < len(array); i++ {
-			sort := array[i]
-			if sort != nil {
-				if sort["field"] != nil && len(sort["field"].(string)) > 0 && sort["type"] != nil && len(sort["type"].(string)) > 0 {
-					sorts = append(sorts, fmt.Sprintf("%s %s", sort["field"], sort["type"]))
+			item := array[i]
+			if item != nil {
+				if item["field"] != nil && len(item["field"].(string)) > 0 && item["type"] != nil && len(item["type"].(string)) > 0 {
+					sortType := strings.ToUpper(item["type"].(string))
+					sortField := item["field"].(string)
+					if strings.Compare(sortType, "ASC") != 0 && strings.Compare(sortType, "DESC") != 0 {
+						continue
+					}
+					if strings.Contains(sortField, ";") || strings.Contains(sortField, ",") {
+						continue
+					}
+					// sorts = append(sorts, "? " + sortType)
+					// sortValues = append(sortValues, sortField)
+					sorts = append(sorts, sortField+" "+sortType)
 				}
 			}
 		}
@@ -122,14 +165,6 @@ func MysqlList(param gin.H, dbName string, tableName string, searchTargets []str
 			sortString = strings.Join(sorts, ",")
 		}
 	}
-	page := paramInt(param["page"], 1) - 1
-	limit := paramInt(param["limit"], 20)
-	where, whereValues := whereString(param, searchTargets)
-	list, count, tcode, err := mysqlTool.ListMysql(dbName, table, where, whereValues, sortString, page, limit)
-	if tcode == 10010 {
-		dealwithMysql()
-		where, whereValues := whereString(param, searchTargets)
-		return mysqlTool.ListMysql(dbName, table, where, whereValues, sortString, page, limit)
-	}
-	return list, count, tcode, err
+	fmt.Println("sortString:", sortString, " - sortValues:", system.JsonString(sortValues))
+	return sortString, sortValues
 }

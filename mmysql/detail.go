@@ -97,10 +97,10 @@ func MysqlDetail(param gin.H, dbName string, tableName string) (gin.H, int, erro
 	table := tableNameFromeParam(param, tableName)
 	where, whereValues := whereString(param, nil)
 	re, tcode, err := mysqlTool.DetailMysql(dbName, table, where, whereValues)
-	if tcode == 10010 {
-		dealwithMysql()
-		where, whereValues := whereString(param, nil)
-		return mysqlTool.DetailMysql(dbName, table, where, whereValues)
-	}
+	// if tcode == 10010 {
+	// 	dealwithMysql()
+	// 	where, whereValues := whereString(param, nil)
+	// 	return mysqlTool.DetailMysql(dbName, table, where, whereValues)
+	// }
 	return re, tcode, err
 }

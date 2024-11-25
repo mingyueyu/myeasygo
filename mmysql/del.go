@@ -61,10 +61,10 @@ func MysqlDel(param gin.H, dbName string, tableName string) (int64, int, error) 
 	table := tableNameFromeParam(param, tableName)
 	where, whereValues := whereString(param, nil)
 	count, tcode, err := mysqlTool.DelectMysql(dbName, table, where, whereValues)
-	if tcode == 10010 {
-		dealwithMysql()
-		where, whereValues := whereString(param, nil)
-		return mysqlTool.DelectMysql(dbName, table, where, whereValues)
-	}
+	// if tcode == 10010 {
+	// 	dealwithMysql()
+	// 	where, whereValues := whereString(param, nil)
+	// 	return mysqlTool.DelectMysql(dbName, table, where, whereValues)
+	// }
 	return count, tcode, err
 }
