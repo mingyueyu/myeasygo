@@ -1,4 +1,4 @@
-package mysqlTool
+package model
 
 import (
 	"database/sql"
@@ -9,40 +9,19 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
 
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type MySql_t struct {
-	Name   string // 数据库名称
-	Host   string // 地址
-	Port   int64  // 端口
-	User   string // 用户
-	Pwd    string // 密码
-	Tables []Table_t
-}
-
-type Table_t struct {
-	Name    string // 表名称
-	Content string // 内容
-}
-
 type ERROR_T struct {
 	Number  int64
 	Message string
 }
 
-var TestType = false
 var CreateDbWhenNoDb = false
-var mysqls = []MySql_t{}
 var dbs = gin.H{}
-
-func MysqlToolInit(params []MySql_t) {
-	mysqls = params
-}
 
 func dbFromName(dbName string) (*sql.DB, int, error) {
 	if dbs[dbName] != nil {
@@ -179,7 +158,7 @@ func ListMysql(dbName string, tableName string, where string, whereValues []any,
 	if sortValues != nil {
 		argsList = append(argsList, sortValues...)
 	}
-	fmt.Println("dbString:", dbString, " - whereValues:", system.JsonString(argsList))
+	fmt.Println("dbString:", dbString, " - whereValues:", JsonString(argsList))
 	rows, err := db.Query(dbString, argsList...)
 	if err != nil {
 		fmt.Println("sql err:", err.Error())

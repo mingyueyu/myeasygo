@@ -1,4 +1,4 @@
-package mysqlTool
+package model
 
 import (
 	"errors"

@@ -1,4 +1,4 @@
-package mysqlTool
+package model
 
 import (
 	"fmt"
@@ -108,11 +108,24 @@ func stringFromCode(code int) string{
     case 10011: return "数据不存在，不能删除"
     case 10012: return "数据不存在，不能更新"
     case 10013: return "数据库获取计数失败"
+    case 10014: return "数据库错误"
+
     // 数据相关
     case 10020: return "数据不存在"
     case 10021: return "数据已存在"
     case 10022: return "上传失败"
     case 10023: return "没有需要更新的数据"
+    case 10024: return "数据错误"
+
+    // 用户相关
+    case 10030: return "用户账号或密码错误"
+    case 10031: return "用户不存在"
+    case 10032: return "用户已存在"
+    case 10033: return "用户未登录"
+    case 10034: return "用户信息错误"
+
+
+
 
 
     default: return fmt.Sprintf("未知错误（%d）", code)

@@ -1,4 +1,4 @@
-package system
+package model
 
 import (
 	"crypto/md5"
@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	// "time"
 
 	"github.com/wumansgy/goEncrypt/aes"
 )

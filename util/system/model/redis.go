@@ -1,4 +1,4 @@
-package general
+package model
 
 import (
 	"context"
@@ -7,15 +7,6 @@ import (
 
 	"github.com/redis/go-redis/v9"
 )
-
-type Redis_t struct {
-	Host string // 地址
-	Port int    // 端口
-	Pwd  string // 密码
-	Db   int    // 数据库
-}
-
-var TestType = false
 
 var myredis = Redis_t{}
 var ctx = context.Background()

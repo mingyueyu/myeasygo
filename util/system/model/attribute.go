@@ -1,4 +1,4 @@
-package system
+package model
 
 type Setting_t struct {
 	Name string
@@ -60,13 +60,13 @@ type Redis_t struct {
 var Setting = Setting_t{}
 var SettingData = SettingData_t{}
 var SettingTest = SettingTest_t{}
-var MySqls = []MySql_t{}
+var mysqls = []MySql_t{}
 var Redis = Redis_t{}
 
 func RefreshSetting(set Setting_t) {
 	Setting = set
 	SettingData = set.Data
 	SettingTest = set.Test
-	MySqls = SettingData.MySqls
+	mysqls = SettingData.MySqls
 	Redis = SettingData.Redis
 }

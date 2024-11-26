@@ -15,32 +15,6 @@ import (
 
 var TestType = false
 
-// // 处理数据库配置
-// func dealwithMysql() {
-// 	mysqls := system.MySqls
-// 	body := []mysqlTool.MySql_t{}
-// 	for i := 0; i < len(mysqls); i++ {
-// 		item_mysql := mysqls[i]
-// 		tables := []mysqlTool.Table_t{}
-// 		for j := 0; j < len(item_mysql.Tables); j++ {
-// 			item_table := item_mysql.Tables[j]
-// 			tables = append(tables, mysqlTool.Table_t{
-// 				Content: item_table.Content,
-// 				Name:    item_table.Name,
-// 			})
-// 		}
-// 		body = append(body, mysqlTool.MySql_t{
-// 			Host:   item_mysql.Host,
-// 			Name:   item_mysql.Name,
-// 			Port:   item_mysql.Port,
-// 			User:   item_mysql.User,
-// 			Pwd:    item_mysql.Pwd,
-// 			Tables: tables,
-// 		})
-// 	}
-// 	mysqlTool.MysqlToolInit(body)
-// }
-
 // type HandlerFunc func(c *gin.Context) (code int64, data interface{}, err error)
 func tableNameFromeParam(param gin.H, tableName string) string {
 	table := tableName
