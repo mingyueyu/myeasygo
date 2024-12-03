@@ -35,8 +35,7 @@ package myeasygo
 // 	// tea算法
 // 	demo.TeaDemo()
 // 	// 缓存
-// 	// demo.CacheInit()
-
+// 	demo.CacheInit()
 // 	r.Run(":12345")
 // }
 
