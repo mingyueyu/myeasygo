@@ -1,0 +1,9 @@
+{
+    "emails" : [{
+        "Name": "测试",
+        "Email": "test@demo.com",
+        "Password": "test123",
+        "ServerHost": "test.com",
+        "ServerPort": 123
+    }]
+}

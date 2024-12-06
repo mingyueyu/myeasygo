@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
-	"github.com/mingyueyu/myeasygo/util/system/model"
+	"github.com/mingyueyu/myeasygo/mmysql/mmysqlTool"
+	"github.com/mingyueyu/myeasygo/util"
 )
 
 func Add(r *gin.Engine, relativePath string, dbName string, tableName string) {
@@ -25,7 +25,7 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(10001, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(10001, err.Error()))
 			return
 		} else {
 			// 处理参数
@@ -35,7 +35,7 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
 				param = tparam
@@ -62,7 +62,7 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 			} else {
 				// 处理返回值
 				if funcResult != nil {
@@ -71,12 +71,12 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 						if TestType {
 							panic(err)
 						}
-						c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+						c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 						return
 					}
 					re = tresult
 				}
-				c.JSON(http.StatusOK, system.ReturnSuccess(re))
+				c.JSON(http.StatusOK, util.ReturnSuccess(re))
 			}
 		}
 	})
@@ -104,7 +104,7 @@ func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withM
 	}
 	delete(content, "createTime")
 	delete(content, "modifyTime")
-	content["infoId"] = model.GetTimeLongName()
+	content["infoId"] = util.GetTimeLongName()
 	if withYear {
 		table = fmt.Sprintf("%s_%v", table, year)
 		// 有年才有月
@@ -113,7 +113,7 @@ func MysqlAdd(param gin.H, dbName string, tableName string, withYear bool, withM
 		}
 	}
 	keys, values := sqlKeyValuesFromMap(content)
-	num, tcode, err := model.AddMysql(dbName, table, keys, values)
+	num, tcode, err := mmysqlTool.AddMysql(dbName, table, keys, values)
 	// if tcode == 10010 {
 	// 	dealwithMysql()
 	// 	num, tcode, err = system.AddMysql(dbName, table, keys, values)

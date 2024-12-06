@@ -32,6 +32,8 @@ package myeasygo
 // 	demo.SettingInit()
 // 	// 数据库demo
 // 	demo.MysqlInit(r)
+//     // redis
+//     demo.RedisInit()
 // 	// tea算法
 // 	demo.TeaDemo()
 // 	// 缓存

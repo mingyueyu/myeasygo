@@ -1,4 +1,4 @@
-package model
+package mmysqlTool
 
 import (
 	"database/sql"
@@ -20,82 +20,28 @@ type ERROR_T struct {
 	Message string
 }
 
-var CreateDbWhenNoDb = false
+type MySql_t struct {
+	Mysqls []MySqlDetail_t
+}
+
+type MySqlDetail_t struct {
+	NickName string // 详情别名
+	Name     string // 数据库名称
+	Host     string // 地址
+	Port     int64  // 端口
+	User     string // 用户
+	Password string // 密码
+	Tables   []Table_t
+}
+
+type Table_t struct {
+	Name    string // 表名称
+	Content string // 内容
+}
+
+var TestType = false
+var Mysql = MySql_t{}
 var dbs = gin.H{}
-
-func dbFromName(dbName string) (*sql.DB, int, error) {
-	if dbs[dbName] != nil {
-		// 尝试从存储中获取已存在的数据库连接。
-		target := dbs[dbName].(*sql.DB)
-		if target != nil {
-			var err error = nil
-			// 检查数据库连接是否可用。
-			err = target.Ping()
-			if err != nil {
-				// if TestType {
-				// 	panic(err)
-				// }
-				// 如果数据库连接不可用，打印错误信息并关闭连接。
-				// fmt.Println("数据库没连接:", err)
-				// fmt.Printf("\n数据库close前连接数OpenConnections：%v\nInUse:%v\n", target.Stats().OpenConnections, target.Stats().InUse)
-				target.Close()
-				// 如果数据库不存在, 创建数据库
-				if errorCode(err) == 1049 {
-					isOK, tcode, err := createDb(dbName, "")
-					if isOK {
-						return dbFromName(dbName)
-					} else {
-						return nil, tcode, err
-					}
-				}
-			} else {
-				// 如果数据库连接可用，直接返回连接对象。
-				return target, 0, nil
-			}
-		}
-
-	}
-	sqlString, tcode, err := targetSqlString(dbName)
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return nil, tcode, err
-	}
-	// fmt.Println(sqlString)
-	// 如果不存在可用的数据库连接，尝试创建新的数据库连接。
-	target, err := sql.Open("mysql", sqlString)
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return nil, errorCode(err), err
-	} else {
-		// 将新创建的数据库连接存储，并返回连接对象。
-		dbs[dbName] = target
-		return target, 0, nil
-	}
-}
-
-func targetSqlString(name string) (string, int, error) {
-	for i := 0; i < len(mysqls); i++ {
-		item := mysqls[i]
-		if strings.Compare(item.Name, name) == 0 {
-			return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", item.User, item.Pwd, item.Host, item.Port, name), 0, nil
-		}
-	}
-	return "", 10010, errors.New("没配置数据库")
-}
-
-func targetSqlStringWithNoDbName(name string) string {
-	for i := 0; i < len(mysqls); i++ {
-		item := mysqls[i]
-		if strings.Compare(item.Name, name) == 0 {
-			return fmt.Sprintf("%s:%s@tcp(%s:%d)/", item.User, item.Pwd, item.Host, item.Port)
-		}
-	}
-	return ""
-}
 
 // 增
 func AddMysql(dbName string, tableName string, keys []string, values []string) (int64, int, error) {
@@ -158,7 +104,7 @@ func ListMysql(dbName string, tableName string, where string, whereValues []any,
 	if sortValues != nil {
 		argsList = append(argsList, sortValues...)
 	}
-	fmt.Println("dbString:", dbString, " - whereValues:", JsonString(argsList))
+	// fmt.Println("dbString:", dbString, " - whereValues:", JsonString(argsList))
 	rows, err := db.Query(dbString, argsList...)
 	if err != nil {
 		fmt.Println("sql err:", err.Error())
@@ -250,6 +196,88 @@ func ListMysql(dbName string, tableName string, where string, whereValues []any,
 		return nil, 0, tcode, err
 	}
 	return result, count, 0, nil
+}
+
+func dbFromName(dbName string) (*sql.DB, int, error) {
+	if dbs[dbName] != nil {
+		// 尝试从存储中获取已存在的数据库连接。
+		target := dbs[dbName].(*sql.DB)
+		if target != nil {
+			var err error = nil
+			// 检查数据库连接是否可用。
+			err = target.Ping()
+			if err != nil {
+				// if TestType {
+				// 	panic(err)
+				// }
+				// 如果数据库连接不可用，打印错误信息并关闭连接。
+				// fmt.Println("数据库没连接:", err)
+				// fmt.Printf("\n数据库close前连接数OpenConnections：%v\nInUse:%v\n", target.Stats().OpenConnections, target.Stats().InUse)
+				target.Close()
+				// 如果数据库不存在, 创建数据库
+				if errorCode(err) == 1049 {
+					isOK, tcode, err := createDb(dbName, "")
+					if isOK {
+						return dbFromName(dbName)
+					} else {
+						return nil, tcode, err
+					}
+				}
+			} else {
+				// 如果数据库连接可用，直接返回连接对象。
+				return target, 0, nil
+			}
+		}
+
+	}
+	sqlString, tcode, err := targetSqlString(dbName)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return nil, tcode, err
+	}
+	// fmt.Println(sqlString)
+	// 如果不存在可用的数据库连接，尝试创建新的数据库连接。
+	target, err := sql.Open("mysql", sqlString)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return nil, errorCode(err), err
+	} else {
+		// 将新创建的数据库连接存储，并返回连接对象。
+		dbs[dbName] = target
+		return target, 0, nil
+	}
+}
+
+func targetSqlString(name string) (string, int, error) {
+	// 先检查是否有别名对应
+	for i := 0; i < len(Mysql.Mysqls); i++ {
+		item := Mysql.Mysqls[i]
+		if strings.Compare(item.NickName, name) == 0 {
+			return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", item.User, item.Password, item.Host, item.Port, name), 0, nil
+		}
+	}
+	// 别名没对应的再找出第一个name对应的数据库
+	for i := 0; i < len(Mysql.Mysqls); i++ {
+		item := Mysql.Mysqls[i]
+		if strings.Compare(item.Name, name) == 0 {
+			return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", item.User, item.Password, item.Host, item.Port, name), 0, nil
+		}
+	}
+	return "", 10010, errors.New("没配置数据库")
+}
+
+func targetSqlStringWithNoDbName(name string) string {
+	for i := 0; i < len(Mysql.Mysqls); i++ {
+		item := Mysql.Mysqls[i]
+		if strings.Compare(item.Name, name) == 0 {
+			return fmt.Sprintf("%s:%s@tcp(%s:%d)/", item.User, item.Password, item.Host, item.Port)
+		}
+	}
+	return ""
 }
 
 // 数据库字段类型
@@ -471,9 +499,9 @@ func createDb(dbName string, tableName string) (bool, int, error) {
 		return false, errorCode(err), err
 	} else {
 		fmt.Println("数据库", dbName, "创建成功")
-		if len(tableName) > 0{
+		if len(tableName) > 0 {
 			return createTable(dbName, tableName)
-		}else {
+		} else {
 			return true, 0, nil
 		}
 	}
@@ -592,4 +620,65 @@ func execute(dbName string, tableName string, dbString string, params []any) (in
 			return lid, 0, nil
 		}
 	}
+}
+
+func sqlCreateDbFromName(dbName string) string {
+	return fmt.Sprintf("CREATE DATABASE %s;", dbName)
+}
+
+func sqlCeateFromName(dbName string, tableName string) (string, error) {
+	defaultTableName := sqlTableName(tableName)
+	// 先取相应的数据库数据
+	for i := 0; i < len(Mysql.Mysqls); i++ {
+		item := Mysql.Mysqls[i]
+		if strings.Compare(item.Name, dbName) == 0 {
+			for j := 0; j < len(item.Tables); j++ {
+				if strings.Compare(item.Tables[j].Name, defaultTableName) == 0 {
+					return sqlDefaultContent(tableName, item.Tables[j].Content), nil
+				}
+			}
+		}
+	}
+	return "", errors.New("未找到数据库" + dbName + "表" + tableName + "内容")
+}
+
+// 截取表名前缀
+func sqlTableName(tableName string) string {
+	return strings.Split(tableName, "_")[0]
+}
+
+// 假设有一个安全函数，用于检查并清洗model参数，避免SQL注入风险
+func sanitizeModel(model string) (string, error) {
+	// 这里应实现对model的检查，移除潜在的危险字符等
+	// 若发现model不合法，返回错误
+	targer := strings.ReplaceAll(strings.ToUpper(model), " ", "")
+	if len(targer) == 0 || strings.Contains(targer, ";DROPTABLE") {
+		return "", fmt.Errorf("invalid model")
+	}
+	return model, nil
+}
+func sqlDefaultContent(name string, field string) string {
+	// 先对model进行清洗和验证
+	_, err := sanitizeModel(name)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return "" // 返回错误空值，让调用方处理
+	}
+	_, err = sanitizeModel(field)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return "" // 返回错误空值，让调用方处理
+	}
+	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` ("+
+		"`ID` bigint NOT NULL AUTO_INCREMENT,"+
+		"`infoId` varchar(16) NOT NULL COMMENT '自定义唯一标记Id',%s,"+
+		"`createTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建日期',"+
+		"`modifyTime` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改日期',"+
+		"PRIMARY KEY (`ID`),"+
+		"UNIQUE KEY `infoId` (`infoId`)"+
+		") ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8 COLLATE = utf8_bin;", name, field)
 }

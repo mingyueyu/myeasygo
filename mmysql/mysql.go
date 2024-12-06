@@ -10,10 +10,45 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
+	"github.com/mingyueyu/myeasygo/mmysql/mmysqlTool"
+	"github.com/mingyueyu/myeasygo/util"
 )
 
 var TestType = false
+
+func RefreshSetting(data []byte) {
+	err := json.Unmarshal([]byte(data), &mmysqlTool.Mysql)
+	if err != nil {
+		fmt.Println("更新mysql配置失败:", err)
+	}else {
+		fmt.Println("更新mysql配置成功", util.JsonString(mmysqlTool.Mysql))
+	}
+}
+
+func ParamToGinH(c *gin.Context) (gin.H, error) {
+
+	// 这样读取字节流之后，整个c.request.body就已经读空啦。再次无法读到数据。
+	data, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return nil, err
+	}
+
+	m := make(map[string]interface{})
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return nil, err
+	}
+
+	// 再次读取数据（复制字节流）
+	c.Request.Body = io.NopCloser(bytes.NewReader(data))
+	return util.MapToGinH(m), nil
+}
 
 // type HandlerFunc func(c *gin.Context) (code int64, data interface{}, err error)
 func tableNameFromeParam(param gin.H, tableName string) string {
@@ -215,7 +250,7 @@ func keysValuesFromParam(scene gin.H) ([]string, []string) {
 		if strings.Compare(typeName, "string") == 0 {
 			value = fmt.Sprintf("%s", v)
 		} else if strings.Compare(typeName, "H") == 0 || strings.Compare(typeName, "") == 0 {
-			value = system.JsonString(v)
+			value = util.JsonString(v)
 		} else {
 			value = fmt.Sprintf("%v", v)
 		}
@@ -223,52 +258,6 @@ func keysValuesFromParam(scene gin.H) ([]string, []string) {
 		values = append(values, value)
 	}
 	return keys, values
-}
-
-func ParamToGinH(c *gin.Context) (gin.H, error) {
-
-	// 这样读取字节流之后，整个c.request.body就已经读空啦。再次无法读到数据。
-	data, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return nil, err
-	}
-
-	m := make(map[string]interface{})
-	err = json.Unmarshal(data, &m)
-	if err != nil {
-		if TestType {
-			panic(err)
-		}
-		return nil, err
-	}
-
-	// 再次读取数据（复制字节流）
-	c.Request.Body = io.NopCloser(bytes.NewReader(data))
-	return mapToGinH(m), nil
-}
-
-func mapToGinH(value map[string]interface{}) gin.H {
-	result := gin.H{}
-	for k, v := range value {
-		result[k] = v
-		typName := fmt.Sprintf("%v", reflect.TypeOf(v))
-		if strings.Compare(typName, "map[string]interface {}") == 0 {
-			result[k] = mapToGinH(v.(map[string]interface{}))
-		} else if strings.Compare(typName, "[]interface {}") == 0 {
-			list := []gin.H{}
-			for i := 0; i < len(v.([]interface{})); i++ {
-				item := v.([]interface{})[i]
-				if strings.Compare(reflect.TypeOf(item).String(), "map[string]interface {}") == 0 {
-					list = append(list, mapToGinH(item.(map[string]interface{})))
-				}
-			}
-			result[k] = list
-		}
-	}
-	return result
 }
 
 func paramInt(value interface{}, defaultValue int64) int64 {

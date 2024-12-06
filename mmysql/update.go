@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
-	"github.com/mingyueyu/myeasygo/util/system/model"
+	"github.com/mingyueyu/myeasygo/mmysql/mmysqlTool"
+	"github.com/mingyueyu/myeasygo/util"
 )
 
 func Update(r *gin.Engine, relativePath string, dbName string, tableName string) {
@@ -23,7 +23,7 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(10001, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(10001, err.Error()))
 			return
 		}
 		// 处理参数
@@ -33,7 +33,7 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 				return
 			}
 			param = tparam
@@ -54,7 +54,7 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 		} else {
 			// 处理结果
 			if funcResult != nil {
@@ -63,12 +63,12 @@ func UpdatePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
 				re = tresult
 			}
-			c.JSON(http.StatusOK, system.ReturnSuccess(re))
+			c.JSON(http.StatusOK, util.ReturnSuccess(re))
 		}
 
 	})
@@ -80,7 +80,7 @@ func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int, erro
 	table := tableNameFromeParam(param, tableName)
 	content, contentValues := sqlKeyValues(param["content"].(gin.H), ",")
 	where, whereValues := whereString(param, nil)
-	count, tcode, err := model.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
+	count, tcode, err := mmysqlTool.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
 	// if tcode == 10010 {
 	// 	dealwithMysql()
 	// 	content, contentValues = sqlKeyValues(param["content"].(gin.H), ",")

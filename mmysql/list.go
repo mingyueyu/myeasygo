@@ -1,14 +1,13 @@
 package mmysql
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
-	"github.com/mingyueyu/myeasygo/util/system/model"
+	"github.com/mingyueyu/myeasygo/mmysql/mmysqlTool"
+	"github.com/mingyueyu/myeasygo/util"
 )
 
 func List(r *gin.Engine, relativePath string, dbName string, tableName string, searchTargets []string) {
@@ -25,7 +24,7 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 				return
 			}
 			param = tparam
@@ -35,9 +34,9 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 		} else {
-			target := system.ReturnSuccess(re)
+			target := util.ReturnSuccess(re)
 			target["count"] = count
 			// 处理返回值
 			if funcResult != nil {
@@ -46,10 +45,10 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
-				target = system.ReturnSuccess(tresult)
+				target = util.ReturnSuccess(tresult)
 				target["count"] = tcount
 
 			}
@@ -62,7 +61,7 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(10001, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(10001, err.Error()))
 		} else {
 			// 处理参数
 			if funcParam != nil {
@@ -71,7 +70,7 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
 				param = tparam
@@ -81,9 +80,9 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 			} else {
-				target := system.ReturnSuccess(re)
+				target := util.ReturnSuccess(re)
 				target["count"] = count
 				// 处理返回值
 				if funcResult != nil {
@@ -92,10 +91,10 @@ func ListPlus(r *gin.Engine, relativePath string, dbName string, tableName strin
 						if TestType {
 							panic(err)
 						}
-						c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+						c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 						return
 					}
-					target = system.ReturnSuccess(tresult)
+					target = util.ReturnSuccess(tresult)
 					target["count"] = tcount
 
 				}
@@ -112,7 +111,7 @@ func MysqlList(param gin.H, dbName string, tableName string, searchTargets []str
 	page := paramInt(param["page"], 1) - 1
 	limit := paramInt(param["limit"], 20)
 	where, whereValues := whereString(param, searchTargets)
-	list, count, tcode, err := model.ListMysql(dbName, table, where, whereValues, sortString, sortValues, page, limit)
+	list, count, tcode, err := mmysqlTool.ListMysql(dbName, table, where, whereValues, sortString, sortValues, page, limit)
 	// if tcode == 10010 {
 	// 	dealwithMysql()
 	// 	where, whereValues := whereString(param, searchTargets)
@@ -165,6 +164,6 @@ func getSort(sort any) (string, []any) {
 			sortString = strings.Join(sorts, ",")
 		}
 	}
-	fmt.Println("sortString:", sortString, " - sortValues:", system.JsonString(sortValues))
+	// fmt.Println("sortString:", sortString, " - sortValues:", util.JsonString(sortValues))
 	return sortString, sortValues
 }

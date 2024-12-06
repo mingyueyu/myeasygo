@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
-	"github.com/mingyueyu/myeasygo/util/system/model"
+	"github.com/mingyueyu/myeasygo/mmysql/mmysqlTool"
+	"github.com/mingyueyu/myeasygo/util"
 )
 
 func Dif(r *gin.Engine, relativePath string, dbName string, tableName string) {
@@ -20,7 +20,7 @@ func DifPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(10001, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(10001, err.Error()))
 		} else {
 			// 处理参数
 			if funcParam != nil {
@@ -29,7 +29,7 @@ func DifPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
 				param = tparam
@@ -39,7 +39,7 @@ func DifPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 			} else {
 				// 处理返回值
 				if funcResult != nil {
@@ -48,12 +48,12 @@ func DifPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 						if TestType {
 							panic(err)
 						}
-						c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+						c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 						return
 					}
 					re = tresult
 				}
-				c.JSON(http.StatusOK, system.ReturnSuccess(re))
+				c.JSON(http.StatusOK, util.ReturnSuccess(re))
 			}
 
 		}
@@ -66,7 +66,7 @@ func MysqlDif(param gin.H, dbName string, tableName string) ([]gin.H, int, error
 		return nil, 10004, errors.New("field参数不能为空")
 	}
 	where, whereValues := whereString(param, nil)
-	list, tcode, err := model.DifMysql(dbName, table, param["field"].(string), where, whereValues)
+	list, tcode, err := mmysqlTool.DifMysql(dbName, table, param["field"].(string), where, whereValues)
 	// if tcode == 10010 {
 	// 	dealwithMysql()
 	// 	where, whereValues := whereString(param, nil)

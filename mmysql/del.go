@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
-	"github.com/mingyueyu/myeasygo/util/system/model"
+	"github.com/mingyueyu/myeasygo/mmysql/mmysqlTool"
+	"github.com/mingyueyu/myeasygo/util"
 )
 
 func Delete(r *gin.Engine, relativePath string, dbName string, tableName string) {
@@ -19,7 +19,7 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(10001, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(10001, err.Error()))
 			return
 		}
 		// 处理参数
@@ -29,7 +29,7 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 				return
 			}
 			param = tparam
@@ -39,7 +39,7 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 		} else {
 			// 处理返回值
 			if funcResult != nil {
@@ -48,12 +48,12 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
 				re = tresult
 			}
-			c.JSON(http.StatusOK, system.ReturnSuccess(re))
+			c.JSON(http.StatusOK, util.ReturnSuccess(re))
 		}
 	})
 }
@@ -61,7 +61,7 @@ func DeletePlus(r *gin.Engine, relativePath string, dbName string, tableName str
 func MysqlDel(param gin.H, dbName string, tableName string) (int64, int, error) {
 	table := tableNameFromeParam(param, tableName)
 	where, whereValues := whereString(param, nil)
-	count, tcode, err := model.DelectMysql(dbName, table, where, whereValues)
+	count, tcode, err := mmysqlTool.DelectMysql(dbName, table, where, whereValues)
 	// if tcode == 10010 {
 	// 	dealwithMysql()
 	// 	where, whereValues := whereString(param, nil)

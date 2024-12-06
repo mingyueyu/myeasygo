@@ -1,0 +1,19 @@
+{
+    "Url": "file:///Users/mingyueyu/Documents/mnt/sdc",
+    "Port": 12000,
+    "Origin": "*",
+    "LoginTimeOut": 43200,
+    "ImagePath": "/Users/mingyueyu/Documents/mnt/sdc/file/image",
+    "ImageUrl": "file:///Users/mingyueyu/Documents/mnt/sdc/file/image",
+    "FilePath": "/Users/mingyueyu/Documents/mnt/sdc/file",
+    "FileUrl": "file:///Users/mingyueyu/Documents/mnt/sdc/file",
+    "Other": {
+        "test": "测一下",
+        "content": {
+            "name": "test",
+            "value": [{
+                "a": "1"
+            }]
+        }
+    }
+}

@@ -1,12 +1,17 @@
-package model
+// 全局通用
+package util
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var mutex = &sync.Mutex{}
@@ -109,4 +114,34 @@ func MacInsert(mac string, connect string) string {
 		target = append(target, mac[i:i+2])
 	}
 	return strings.Join(target, connect)
+}
+
+// json格式化字符串
+func JsonString(mapData interface{}) string {
+	j, err := json.MarshalIndent(mapData, "", " ")
+	if err != nil {
+		return ""
+	}
+	return string(j)
+}
+
+func MapToGinH(value map[string]interface{}) gin.H {
+	result := gin.H{}
+	for k, v := range value {
+		result[k] = v
+		typName := fmt.Sprintf("%v", reflect.TypeOf(v))
+		if strings.Compare(typName, "map[string]interface {}") == 0 {
+			result[k] = MapToGinH(v.(map[string]interface{}))
+		} else if strings.Compare(typName, "[]interface {}") == 0 {
+			list := []gin.H{}
+			for i := 0; i < len(v.([]interface{})); i++ {
+				item := v.([]interface{})[i]
+				if strings.Compare(reflect.TypeOf(item).String(), "map[string]interface {}") == 0 {
+					list = append(list, MapToGinH(item.(map[string]interface{})))
+				}
+			}
+			result[k] = list
+		}
+	}
+	return result
 }

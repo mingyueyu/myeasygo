@@ -1,0 +1,16 @@
+{
+    "bots": [
+        {
+            "NickName": "default",
+            "Url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=x",
+            "AlertUrl": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xx",
+            "ErrorUrl": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
+        },
+        {
+            "NickName": "test",
+            "Url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=y",
+            "AlertUrl": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=yy",
+            "ErrorUrl": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=yyy"
+        }
+    ]
+}

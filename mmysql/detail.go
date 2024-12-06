@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mingyueyu/myeasygo/util/system"
-	"github.com/mingyueyu/myeasygo/util/system/model"
+	"github.com/mingyueyu/myeasygo/mmysql/mmysqlTool"
+	"github.com/mingyueyu/myeasygo/util"
 )
 
 func Detail(r *gin.Engine, relativePath string, dbName string, tableName string) {
@@ -22,7 +22,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 				return
 			}
 			param = tparam
@@ -32,7 +32,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 		} else {
 			// 处理返回值
 			if funcResult != nil {
@@ -41,12 +41,12 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
 				re = tresult
 			}
-			c.JSON(http.StatusOK, system.ReturnSuccess(re))
+			c.JSON(http.StatusOK, util.ReturnSuccess(re))
 		}
 	})
 	r.POST(relativePath, func(c *gin.Context) {
@@ -55,7 +55,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 			if TestType {
 				panic(err)
 			}
-			c.JSON(http.StatusOK, system.ReturnFail(10001, err.Error()))
+			c.JSON(http.StatusOK, util.ReturnFail(10001, err.Error()))
 		} else {
 			// 处理参数
 			if funcParam != nil {
@@ -64,7 +64,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 					if TestType {
 						panic(err)
 					}
-					c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+					c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 					return
 				}
 				param = tparam
@@ -74,7 +74,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 				if TestType {
 					panic(err)
 				}
-				c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+				c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 			} else {
 				// 处理返回值
 				if funcResult != nil {
@@ -83,12 +83,12 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 						if TestType {
 							panic(err)
 						}
-						c.JSON(http.StatusOK, system.ReturnFail(tcode, err.Error()))
+						c.JSON(http.StatusOK, util.ReturnFail(tcode, err.Error()))
 						return
 					}
 					re = tresult
 				}
-				c.JSON(http.StatusOK, system.ReturnSuccess(re))
+				c.JSON(http.StatusOK, util.ReturnSuccess(re))
 			}
 		}
 	})
@@ -97,7 +97,7 @@ func DetailPlus(r *gin.Engine, relativePath string, dbName string, tableName str
 func MysqlDetail(param gin.H, dbName string, tableName string) (gin.H, int, error) {
 	table := tableNameFromeParam(param, tableName)
 	where, whereValues := whereString(param, nil)
-	re, tcode, err := model.DetailMysql(dbName, table, where, whereValues)
+	re, tcode, err := mmysqlTool.DetailMysql(dbName, table, where, whereValues)
 	// if tcode == 10010 {
 	// 	dealwithMysql()
 	// 	where, whereValues := whereString(param, nil)
