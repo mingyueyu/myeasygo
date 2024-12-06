@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/mingyueyu/myeasygo/email/emailTool"
-	"github.com/mingyueyu/myeasygo/util"
 )
 
 var EmailInfo emailTool.Email_t
@@ -17,7 +16,7 @@ func RefreshSetting(data []byte) {
 	if err != nil {
 		fmt.Println("更新email配置失败:", err)
 	}else {
-		fmt.Println("更新email配置成功", util.JsonString(EmailInfo))
+		fmt.Println("更新email配置成功")
 	}
 }
 

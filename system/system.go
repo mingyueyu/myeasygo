@@ -32,7 +32,7 @@ func RefreshSetting(data []byte) {
 	if err != nil {
 		fmt.Println("更新system配置失败:", err)
 	}else {
-		fmt.Println("更新system配置成功", util.JsonString(Setting))
+		fmt.Println("更新system配置成功")
 	}
 }
 

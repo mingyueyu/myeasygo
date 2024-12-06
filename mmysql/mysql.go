@@ -21,7 +21,7 @@ func RefreshSetting(data []byte) {
 	if err != nil {
 		fmt.Println("更新mysql配置失败:", err)
 	}else {
-		fmt.Println("更新mysql配置成功", util.JsonString(mmysqlTool.Mysql))
+		fmt.Println("更新mysql配置成功")
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mingyueyu/myeasygo/util"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -23,7 +22,6 @@ var ctx = context.Background()
 var rdb *redis.Client
 
 func SetValue(key string, value interface{}, expiration time.Duration) error {
-	fmt.Println(util.JsonString(MyRedis))
 	if MyRedis.Host == "" || MyRedis.Password == "" {
 		return fmt.Errorf("redis not init")
 	}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/mingyueyu/myeasygo/bot/botTool"
-	"github.com/mingyueyu/myeasygo/util"
 )
 
 func RefreshSetting(data []byte) {
@@ -14,7 +13,7 @@ func RefreshSetting(data []byte) {
 	if err != nil {
 		fmt.Println("更新bot配置失败:", err)
 	}else {
-		fmt.Println("更新bot配置成功",util.JsonString(botTool.Bot))
+		fmt.Println("更新bot配置成功")
 	}
 }
 

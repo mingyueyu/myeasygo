@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/mingyueyu/myeasygo/mredis/mredisTool"
-	"github.com/mingyueyu/myeasygo/util"
 )
 
 func RefreshSetting(data []byte) {
@@ -14,7 +13,7 @@ func RefreshSetting(data []byte) {
 	if err != nil {
 		fmt.Println("更新redis配置失败:", err)
 	}else {
-		fmt.Println("更新redis配置成功:", util.JsonString(mredisTool.MyRedis))
+		fmt.Println("更新redis配置成功:")
 	}
 }
 
