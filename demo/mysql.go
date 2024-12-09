@@ -19,6 +19,8 @@ func MysqlInit(r *gin.Engine) {
 		fmt.Println("addPlus结果：", util.JsonString(result))
 		return result, 0, nil
 	})
+	mmysql.Sum(r, "/api/sum", "testdb", "testTable")
+	
 	mmysql.Delete(r, "/api/delete", "testdb", "testTable")
 	mmysql.DeletePlus(r, "/api/deletePlus", "testdb", "testTable", func(c *gin.Context, param gin.H) (gin.H, int, error) {
 		fmt.Println("deletePlus参数：", util.JsonString(param))

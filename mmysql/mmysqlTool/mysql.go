@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -440,6 +441,104 @@ func DifMysql(dbName string, tableName string, field string, where string, where
 		result = append(result, resultMac)
 	}
 	return result, 0, nil
+}
+
+
+func SumMysql(dbName string, tableName string, field string, where string, whereValues []any) (int64, int, error) {
+	db, tcode, err := dbFromName(dbName)
+	if err != nil {
+		if TestType {
+			panic(err)
+		}
+		return 0, tcode, err
+	}
+	// 处理参数
+	whereString := ""
+	if len(where) > 0 {
+		whereString = fmt.Sprintf("WHERE %s", where)
+	}
+	dbString := fmt.Sprintf("SELECT SUM(%s) AS count FROM %s %s;", field, tableName, whereString)
+	rows, err := db.Query(dbString, whereValues...)
+	if err != nil {
+		errcode := errorCode(err)
+		if errcode != -1 && errcode == 1146 {
+			// fmt.Printf("数据表%s不存在，尝试创建数据表", tableName)
+			sqlStr, err := sqlCeateFromName(dbName, tableName)
+			if err != nil {
+				// 没有数据库
+				if TestType {
+					panic(err)
+				}
+				return 0, 10010, err
+			}
+			_, err = db.Query(sqlStr)
+			if err != nil {
+				if TestType {
+					panic(err)
+				}
+				return 0, errorCode(err), err
+			} else {
+				// fmt.Printf("数据表%s创建成功", tableName)
+				// fmt.Printf("\n==Insert-dbString:%s\n", dbString)
+				rows, err = db.Query(dbString)
+				if err != nil {
+					if TestType {
+						panic(err)
+					}
+					return 0, errorCode(err), err
+				}
+			}
+		} else {
+			return 0, errorCode(err), err
+		}
+	}
+	defer rows.Close()
+	//字典类型
+	//构造scanArgs、values两个数组，scanArgs的每个值指向values相应值的地址
+	columns, _ := rows.Columns()
+	scanArgs := make([]interface{}, len(columns))
+	values := make([]interface{}, len(columns))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+	// var result = []gin.H{}
+	var count = int64(0)
+	for rows.Next() {
+		//将行数据保存到record字典
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			return 0, 10020, errors.New("数据不存在")
+		}
+		record := make(map[string]interface{})
+		for i, col := range values {
+			if col != nil {
+				var val interface{}
+				switch v := col.(type) {
+				case []byte:
+					val = string(v)
+				case int64, float64, time.Time: // 根据实际数据库列类型添加更多的case
+					val = v
+				default:
+					// 处理其他类型或抛出错误
+					val = fmt.Sprintf("%v", v)
+				}
+				record[columns[i]] = val
+			}
+		}
+		if record["count"] == nil {
+			return 0, 10013, errors.New("数据库获取计数失败")
+		}
+		str := record["count"].(string)
+		count, err = strconv.ParseInt(str, 10, 64)
+		if err != nil {
+			return 0, 10013, errors.New("数据库获取计数失败")
+		}
+		// resultMac := gin.H{
+		// 	"count": record["count"].(int64),
+		// }
+		// result = append(result, resultMac)
+	}
+	return count, 0, nil
 }
 
 // 检查数量
