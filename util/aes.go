@@ -91,7 +91,7 @@ func GetSetting(path string, fileName string) ([]byte, error) {
 	}
 
 	if checkConvert(codeString, "feasycom", string(j)) {
-		return unEncData, nil
+		return j, nil
 	} else {
 		// fmt.Println("校验失败")
 		return nil, errors.New("校验失败")
