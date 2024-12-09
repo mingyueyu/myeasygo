@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +26,7 @@ func AesInit(key string) {
 	aesSecretKey = key
 }
 
-func GetSetting(path string, fileName string) ([]byte, error){
+func GetSetting(path string, fileName string) ([]byte, error) {
 	if len(aesSecretKey) == 0 {
 		return nil, errors.New("aesSecretKey为空,请先设置aesSecretKey")
 	}
@@ -80,6 +81,7 @@ func GetSetting(path string, fileName string) ([]byte, error){
 	}
 	codeString := setting["code"].(string)
 	delete(setting, "code")
+	setting = passwordDecrypt(setting)
 	j, err := json.MarshalIndent(setting, "", " ")
 	if err != nil {
 		if TestType {
@@ -87,15 +89,16 @@ func GetSetting(path string, fileName string) ([]byte, error){
 		}
 		return nil, err
 	}
+
 	if checkConvert(codeString, "feasycom", string(j)) {
 		return unEncData, nil
 	} else {
 		// fmt.Println("校验失败")
-		return  nil, errors.New("校验失败")
+		return nil, errors.New("校验失败")
 	}
 }
 
-func SetSetting(codePath string, fileName string, dealwithParam func(param gin.H)gin.H) error{
+func SetSetting(codePath string, fileName string, dealwithParam func(param gin.H) gin.H) error {
 	if len(fileName) == 0 {
 		fileName = "system"
 	}
@@ -142,6 +145,8 @@ func SetSetting(codePath string, fileName string, dealwithParam func(param gin.H
 	if dealwithParam != nil {
 		setting = dealwithParam(setting)
 	}
+	// 密码加密
+	setting = passwordEncrypt(setting)
 	jsonData, err = json.MarshalIndent(setting, "", " ")
 	if err != nil {
 		if TestType {
@@ -158,77 +163,117 @@ func SetSetting(codePath string, fileName string, dealwithParam func(param gin.H
 		// fmt.Println("加密失败：", err)
 		return err
 	}
-	saveToExePath(value, codePath + "/conf", fileName)
+	saveToExePath(value, codePath+"/conf", fileName)
 	return saveToExePath(value, "", fileName)
 }
 
+// 密码加密
+func passwordEncrypt(param map[string]interface {}) map[string]interface {} {
+	for k, v := range param {
+		if strings.Contains(strings.ToUpper(k), "PASSWORD") {
+			param[k] = TeaEncryptString(v.(string))
+		}
+		if reflect.TypeOf(v).String() == "map[string]interface {}" {
+			param[k] = passwordEncrypt(v.(map[string]interface {}))
+		} else if reflect.TypeOf(v).String() == "[]interface {}" {
+			for i := 0; i < len(v.([]interface {})); i++ {
+				item := v.([]interface{})[i]
+				if reflect.TypeOf(item).String() == "map[string]interface {}" {
+					v.([]interface{})[i] = passwordEncrypt(item.(map[string]interface {}))
+				}
+			}
+			param[k] = v
+		}
+	}
+	return param
+}
+
+// 密码解密
+func passwordDecrypt(param map[string]interface {}) map[string]interface {} {
+	for k, v := range param {
+		if strings.Contains(strings.ToUpper(k), "PASSWORD") {
+			param[k] = TeaDecryptString(v.(string))
+		}
+		if reflect.TypeOf(v).String() == "map[string]interface {}" {
+			param[k] = passwordDecrypt(v.(map[string]interface {}))
+		} else if reflect.TypeOf(v).String() == "[]interface {}" {
+			for i := 0; i < len(v.([]interface {})); i++ {
+				item := v.([]interface{})[i]
+				if reflect.TypeOf(item).String() == "map[string]interface {}" {
+					v.([]interface{})[i] = passwordDecrypt(item.(map[string]interface {}))
+				}
+			}
+			param[k] = v
+		}
+	}
+	return param
+}
 
 // 加密函数
 func aesEncrypt(plaintext, key []byte) (string, error) {
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        return "", err
-    }
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
 
-    // PKCS7Padding填充
-    plaintext = pKCS7Padding(plaintext, block.BlockSize())
+	// PKCS7Padding填充
+	plaintext = pKCS7Padding(plaintext, block.BlockSize())
 
-    // 初始化向量（IV）
-    ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-    iv := ciphertext[:aes.BlockSize]
-    if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-        return "", err
-    }
+	// 初始化向量（IV）
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
 
-    // 加密模式（这里使用CBC模式）
-    mode := cipher.NewCBCEncrypter(block, iv)
-    mode.CryptBlocks(ciphertext[aes.BlockSize:], plaintext)
+	// 加密模式（这里使用CBC模式）
+	mode := cipher.NewCBCEncrypter(block, iv)
+	mode.CryptBlocks(ciphertext[aes.BlockSize:], plaintext)
 
-    // Base64编码
-    return base64.StdEncoding.EncodeToString(ciphertext), nil
+	// Base64编码
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
 // PKCS7Padding填充
 func pKCS7Padding(ciphertext []byte, blockSize int) []byte {
-    padding := blockSize - len(ciphertext)%blockSize
-    padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-    return append(ciphertext, padtext...)
+	padding := blockSize - len(ciphertext)%blockSize
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(ciphertext, padtext...)
 }
-
 
 // 解密函数
 func aesDecrypt(ciphertext string, key []byte) ([]byte, error) {
-    data, err := base64.StdEncoding.DecodeString(ciphertext)
-    if err != nil {
-        return nil, err
-    }
+	data, err := base64.StdEncoding.DecodeString(ciphertext)
+	if err != nil {
+		return nil, err
+	}
 
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        return nil, err
-    }
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
 
-    if len(data) < aes.BlockSize {
-        return nil, fmt.Errorf("ciphertext too short")
-    }
+	if len(data) < aes.BlockSize {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
 
-    iv := data[:aes.BlockSize]
-    data = data[aes.BlockSize:]
+	iv := data[:aes.BlockSize]
+	data = data[aes.BlockSize:]
 
-    mode := cipher.NewCBCDecrypter(block, iv)
-    mode.CryptBlocks(data, data)
+	mode := cipher.NewCBCDecrypter(block, iv)
+	mode.CryptBlocks(data, data)
 
-    // 去除PKCS7Padding
-    data = pKCS7UnPadding(data, block.BlockSize())
+	// 去除PKCS7Padding
+	data = pKCS7UnPadding(data, block.BlockSize())
 
-    return data, nil
+	return data, nil
 }
 
 // PKCS7UnPadding去除填充
 func pKCS7UnPadding(data []byte, blockSize int) []byte {
-    length := len(data)
-    unpadding := int(data[length-1])
-    return data[:(length - unpadding)]
+	length := len(data)
+	unpadding := int(data[length-1])
+	return data[:(length - unpadding)]
 }
 
 // 保存到指定路径
@@ -287,8 +332,6 @@ func myPath() (string, error) {
 	exPath := filepath.Dir(ex)
 	return exPath, nil
 }
-
-
 
 // 转md5
 func convert(name string, targetJson string) string {
