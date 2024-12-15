@@ -45,15 +45,22 @@ var Mysql = MySql_t{}
 var dbs = gin.H{}
 
 // 增
-func AddMysql(dbName string, tableName string, keys []string, values []string) (int64, int, error) {
+func AddMysql(dbName string, tableName string, keys []string, values [][]string) (int64, int, error) {
 	wenValue := []string{}
-	for i := 0; i < len(keys); i++ {
-		wenValue = append(wenValue, "?")
+	for i := 0; i < len(values); i++ {
+		swenValue := []string{}
+		for j := 0; j < len(keys); j++ {
+			swenValue = append(swenValue, "?")
+		}
+		wenValue = append(wenValue, fmt.Sprintf("(%s)", strings.Join(swenValue, ",")))
 	}
-	dbString := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", tableName, strings.Join(keys, ","), strings.Join(wenValue, ","))
-	args := make([]any, len(values))
-	for i, v := range values {
-		args[i] = v
+	dbString := fmt.Sprintf("INSERT INTO %s(%s) VALUES%s", tableName, strings.Join(keys, ","), strings.Join(wenValue, ","))
+	args := []any{}
+	for i := 0; i < len(values); i++ {
+		items := values[i]
+		for _, v := range items {
+			args = append(args, v)
+		}
 	}
 	return execute(dbName, tableName, dbString, args)
 }
@@ -695,7 +702,6 @@ func execute(dbName string, tableName string, dbString string, params []any) (in
 		if TestType {
 			panic(err)
 		}
-		fmt.Println("执行失败", dbString)
 		return 0, errorCode(err), err
 	}
 	if strings.HasPrefix(dbString, "UPDATE") {
@@ -719,10 +725,6 @@ func execute(dbName string, tableName string, dbString string, params []any) (in
 			return lid, 0, nil
 		}
 	}
-}
-
-func sqlCreateDbFromName(dbName string) string {
-	return fmt.Sprintf("CREATE DATABASE %s;", dbName)
 }
 
 func sqlCeateFromName(dbName string, tableName string) (string, error) {
@@ -774,7 +776,7 @@ func sqlDefaultContent(name string, field string) string {
 	}
 	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s` ("+
 		"`ID` bigint NOT NULL AUTO_INCREMENT,"+
-		"`infoId` varchar(16) NOT NULL COMMENT '自定义唯一标记Id',%s,"+
+		"`infoId` varchar(255) NOT NULL COMMENT '自定义唯一标记Id',%s,"+
 		"`createTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建日期',"+
 		"`modifyTime` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改日期',"+
 		"PRIMARY KEY (`ID`),"+

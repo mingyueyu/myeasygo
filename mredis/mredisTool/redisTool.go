@@ -15,7 +15,7 @@ type Redis_t struct {
 	Db       int    // 数据库
 }
 
-var TestType = true
+var TestType = false
 var MyRedis = Redis_t{}
 var ctx = context.Background()
 
