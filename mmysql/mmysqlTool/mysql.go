@@ -704,7 +704,7 @@ func execute(dbName string, tableName string, dbString string, params []any) (in
 		}
 		return 0, errorCode(err), err
 	}
-	if strings.HasPrefix(dbString, "UPDATE") {
+	if strings.HasPrefix(dbString, "UPDATE") ||  strings.HasPrefix(dbString, "DELETE"){
 		count, err := result.RowsAffected()
 		if err != nil {
 			return 0, errorCode(err), err
