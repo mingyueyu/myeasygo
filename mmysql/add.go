@@ -59,8 +59,17 @@ func AddPlus(r *gin.Engine, relativePath string, dbName string, tableName string
 				}
 			} else {
 				if param["content"] != nil {
-					delete(param["content"].(gin.H), "IP")
-					delete(param["content"].(gin.H), "userAgent")
+					if fmt.Sprintf("%T", param["content"]) == "[]gin.H" {
+						content := param["content"].([]gin.H)
+						for i := 0; i < len(content); i++ {
+							delete(content[i], "IP")
+							delete(content[i], "userAgent")
+						}
+						param["content"] = content
+					}else {
+						delete(param["content"].(gin.H), "IP")
+						delete(param["content"].(gin.H), "userAgent")
+					}
 				} else {
 					delete(param, "IP")
 					delete(param, "userAgent")
