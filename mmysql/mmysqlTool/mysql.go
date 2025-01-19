@@ -37,7 +37,7 @@ type MySqlDetail_t struct {
 
 type Table_t struct {
 	Name    string // 表名称
-	Content string // 内容
+	Content []string // 内容
 }
 
 var TestType = false
@@ -735,7 +735,7 @@ func sqlCeateFromName(dbName string, tableName string) (string, error) {
 		if strings.Compare(item.Name, dbName) == 0 {
 			for j := 0; j < len(item.Tables); j++ {
 				if strings.Compare(item.Tables[j].Name, defaultTableName) == 0 {
-					return sqlDefaultContent(tableName, item.Tables[j].Content), nil
+					return sqlDefaultContent(tableName, strings.Join(item.Tables[j].Content, ",")), nil
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 package mmysql
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -78,6 +79,9 @@ func MysqlUpdate(param gin.H, dbName string, tableName string) (gin.H, int, erro
 	delete(param, "createTime")
 	delete(param, "modifyTime")
 	table := tableNameFromeParam(param, tableName)
+	if param["content"] == nil {
+		return nil, 10001, errors.New("content is nil")
+	}
 	content, contentValues := sqlKeyValues(param["content"].(gin.H), ",")
 	where, whereValues := whereString(param, nil)
 	count, tcode, err := mmysqlTool.UpdateMysql(dbName, table, content, contentValues, where, whereValues)
